@@ -42,8 +42,8 @@ There are five basic components of our ROS package suite:
  * Emergency stop. For safety reasons, a special package offers emergency-stop functionality. This must run on a remote computer (i.e., the control station), not the robot itself.
 
 	
-WARNING: Using the emergency stop package as detailed in this readme is *mandatory* for operating the robot with ROS! If you need a different implementation of the emergency stop for your project, please contact taurob. 
-WARNING: Do not attempt to run multiple instances of any node! The resulting actions are unforeseeable. When using ROS and Commander together, *always* use the provided multiplexer package!
+*WARNING:* Using the emergency stop package as detailed in this readme is *mandatory* for operating the robot with ROS! If you need a different implementation of the emergency stop for your project, please contact taurob. 
+*WARNING:* Do not attempt to run multiple instances of any node! The resulting actions are unforeseeable. When using ROS and Commander together, *always* use the provided multiplexer package! (Note: initially, the multiplexer package will not be available so ROS and Commander cannot be user together yet.)
 
 
 ## Package overview
@@ -53,13 +53,15 @@ You are now presented with an overview of the directory and package structure of
 The taurob workspace contains the following packages:
 
 
-### taurob_arm_node - Communicates with the individual arm joints, and offers arm control via JointState messages. Note that you can only use either taurob_arm_node OR taurob_arm_ros_control. Configure which one you want to use in the bringup launchfile.
+### taurob_arm_node 
 
-Publishes:
+Communicates with the individual arm joints, and offers arm control via JointState messages. Note that you can only use either taurob_arm_node OR taurob_arm_ros_control. Configure which one you want to use in the bringup launchfile.
+
+*Publishes:*
 
  * jointstate_status (sensor_msgs/JointState) - The current angle of each arm segment. Only the "position" member is defined! The joint names follow the scheme "arm_joint_n", where n is the joint number. The base joint is number 0, increasing with each subsequent joint.
 	
-Subscribes:
+*Subscribes:*
 
  * jointstate_cmd (sensor_msgs/JointState) - the desired angle for each arm joint. Only the "position" member is defined, which is the desired position in rad. You do not need to specify all joint positions, it suffices to define those you whish to change. The joint names follow the scheme "arm_joint_n", where n is the joint number. The base joint is number 0, increasing with each subsequent joint.
 	
@@ -68,12 +70,16 @@ Subscribes:
  * watchdog_feed (std_msgs/Bool) - Used for the emergency stop. If the node doesn't receive a watchdog message within a defined interval, it will stop any movement. Do not use for other purposes, and do not publish custom messages on this topic.
 	
 
-### taurob_arm_ros_control - Communicates with the individual arm joints, and integrates with ROS control. Note that you can only use either taurob_arm_node OR taurob_arm_ros_control. Configure which one you want to use in the bringup launchfile.
+### taurob_arm_ros_control 
+
+Communicates with the individual arm joints, and integrates with ROS control. Note that you can only use either taurob_arm_node OR taurob_arm_ros_control. Configure which one you want to use in the bringup launchfile.
 
 	
-### taurob_base_node - Handles communication with the robot's base platform.
+### taurob_base_node 
 
-Publishes:
+Handles communication with the robot's base platform.
+
+*Publishes:*
  * odom (nav_msgs/Odometry) - Odometry of the robot's tracks
 	
  * imu_magnetometer (geometry_msgs/Vector3Stamped) - Raw value of the robot's built-in magnetometer. Currently not for public use.
@@ -90,7 +96,7 @@ Publishes:
 	
  * remaining_optime (std_msgs/Float32) - The remainin operational time of the robot, calculated based on the supply voltage. This is for informal purposes only. Always use the supply voltage directly to determine if the battery is critically low.
 	
-Subscribes:
+*Subscribes:*
 	
  * cmd_vel (geometry_msgs/Twist) - Steer the robot with the specified velocity in x and y directions (forward/backward, left/right). Only the "linear.x" (forward/backward movement) and "angular.z" (rotation around z axis) are defined and interpreted.
 	
@@ -105,15 +111,17 @@ Subscribes:
  * watchdog_feed (std_msgs/Bool) - Used for the emergency stop. If the node doesn't receive a watchdog message within a defined interval, it will stop any movement. Do not use for other purposes, and do not publish custom messages on this topic. 
 	
 
-### taurob_claw_node - Offers claw control using a JointState message, and reports current angles and grip force.
+### taurob_claw_node 
 
-Publishes:
+Offers claw control using a JointState message, and reports current angles and grip force.
+
+*Publishes:*
 
  * jointstate_status (sensor_msgs/JointState) - The current angle of the rotation and grip joints. Only the "position" member is defined! Joint names are "claw_rotation" and "claw_grip".
 	
  * claw_force (std_msgs/Float64) - The force measured by the sensor in the claw, as a scalar.
 	
-Subscribes:
+*Subscribes:*
 
  * jointstate_cmd (sensor_msgs/JointState) - the desired angle for rotation and grip joints. Only the "position" member is defined, which is the desired position in rad. You do not need to specify all joint positions, it suffices to define those you whish to change. The joint names are either (or both) "claw_rotation" and/or "claw_grip".
 	
@@ -123,26 +131,34 @@ Subscribes:
 
 
 	
-### taurob_bringup - Contains launchfile for system bringup.
+### taurob_bringup 
+
+Contains launchfile for system bringup.
 
 
-### taurob_enable_switch - Multiplexer node to toggle between control by ROS and control by Commander. Receives toggle command by Commander via TCP, and publishes ROS message accordingly. (NOTE: not included in initial release. Will be published soon.)
+### taurob_enable_switch 
 
-Publishes:
+Multiplexer node to toggle between control by ROS and control by Commander. Receives toggle command by Commander via TCP, and publishes ROS message accordingly. (NOTE: not included in initial release. Will be published soon.)
+
+*Publishes:*
 	
  * enable_control (std_msgs/Bool) - True if ROS commands should become active, False if Commander is supposed to control the robot.
 	
 	
 
-### taurob_watchdog - Watchdog server that listens for messages from an external watchdog client, and relays them to a ROS message.
+### taurob_watchdog 
 
-Publishes:
+Watchdog server that listens for messages from an external watchdog client, and relays them to a ROS message.
+
+*Publishes:*
 	
  * watchdog_feed (std_msgs/Bool) - If published, signals that a watchdog pulse was received. As soon as that pulse is absent for more than 150ms, the taurob nodes will stop communicating with the robot, bringing it to a safe halted state.
 	
 
 
-### taurob_watchdog_client - Client program for the watchdog that remotely feeds the watchdog server. Is supposed to run on an external system, it has no dependencies to ROS and may be compiled and run as a stand-alone program outside the ROS workspace.
+### taurob_watchdog_client 
+
+Client program for the watchdog that remotely feeds the watchdog server. Is supposed to run on an external system, it has no dependencies to ROS and may be compiled and run as a stand-alone program outside the ROS workspace.
 
 
 
@@ -169,14 +185,14 @@ Other parameters exist, but they are not relevant to the user. Do not change any
 
 ## Starting the nodes
 
-*IMPORTANT*: If your robot has an arm, it MUST be calibrated before using it with ROS! See the previous section "Package configuration". If you are not sure what to do, please contact taurob.
+**IMPORTANT:** If your robot has an arm, it MUST be calibrated before using it with ROS! See the previous section "Package configuration". If you are not sure what to do, please contact taurob.
 
 
 To bring up the driver nodes, use the tracker_bringup.launch file from the taurob_bringup package. The relevant workspace (~/rosws) is set up automatically (via entry in .bashrc). To launch all taurob driver nodes, use the following command:
 
 $ roslaunch taurob_bringup tracker_bringup.launch
 
-*IMPORTANT*: Once the driver nodes are up and running, the battery’s supply voltage will be published on the topic /supply_voltage. *You need to monitor that voltage during operation to prevent potential data loss and damage to the robot’s batteries!*
+**IMPORTANT:** Once the driver nodes are up and running, the battery’s supply voltage will be published on the topic /supply_voltage. *You need to monitor that voltage during operation to prevent potential data loss and damage to the robot’s batteries!*
 If the voltage drops below 22V, or remains below 23V for extended periods of time, please shut down everything, turn the robot off and let the battery charge. If you do not monitor the voltage, and it drops further down than that, components such as the WiFi AP or the on-board PC might simply power off, and the battery could be damaged (deep-discharge)! So to prevent loss of data or damage, make sure to always monitor the supply voltage.
 
 It is not recommended to start nodes separately. Make sure that there is always only one instance of any taurob node running! Otherwise, the resulting actions of the robot are unforeseeable.
@@ -201,7 +217,7 @@ You can use these commands to test the basic functions of the robot. Make sure y
 
 ### Driving the robot 
 
-CAREFUL: if you issue the next command, the robot *will not stop driving* until you issue another Twist message with zero velocity, or you stop the watchdog/hit the emergency stop!
+**CAREFUL:** if you issue the next command, the robot **will not stop driving** until you issue another Twist message with zero velocity, or you stop the watchdog/hit the emergency stop!
 
 $ rostopic pub /cmd_vel geometry_msgs/Twist -r 1 -- '[0.3, 0.0, 0.0]' '[0.0, 0.0, -0.1]'
 
