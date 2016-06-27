@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="robot_name" default="tracker" />
+  <arg name="watchdog_enabled" default="false" />
+
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find taurob_arm_ros_control)/config/$(arg robot_name).yaml" command="load"/>
+<!--  <rosparam file="$(find taurob_arm_ros_control)/config/sim.yaml" command="load"/>-->
+
+  <node name="arm_hw_interface" pkg="taurob_arm_ros_control" type="arm_hw_interface" ns="taurob_tracker" output="screen">
+    <param name="watchdog" value="$(arg watchdog_enabled)" />
+    <param name="control_enabled_at_startup" value="true" />
+    <remap from="/taurob_tracker/joint_states" to="/joint_states" />
+  </node>
+
+</launch>

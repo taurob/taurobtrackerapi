@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="watchdog_enabled" default="true" />
+
+	<node pkg="taurob_base_node" type="taurob_base_node" name="taurob_base_node" output="screen">
+		<param name="track_width" value="0.55" />
+		<param name="wheel_diameter" value="0.303" />
+		<param name="odom_low_covariance" value="1.0" />
+		<param name="odom_high_covariance" value="1000.0" />
+		<param name="odom_turn_high_cov_tolerance" value="0.08" />
+		<param name="publish_tf" value="true" />
+		<param name="tf_from_frame" value="base_link" />
+		<param name="tf_to_frame" value="odom" />
+		<param name="watchdog" value="$(arg watchdog_enabled)" />
+ 		<param name="control_enabled_at_startup" value="true" />
+		<param name="base_ip" value="10.0.0.2" />
+		<param name="base_port" value="8080" />
+		<param name="protocol_version" value="2" />
+	</node>
+	
+</launch>

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>taurob_robot_description</name>
+  <version>0.0.0</version>
+  <description>The taurob_robot_description package</description>
+
+  <maintainer email="martin.schenk@taurob.com">Martin Schenk</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>urdf</build_depend>
+  <build_depend>xacro</build_depend>
+  <run_depend>urdf</run_depend>
+  <run_depend>xacro</run_depend>
+
+  <export>
+
+  </export>
+</package>

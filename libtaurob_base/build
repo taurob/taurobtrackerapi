@@ -1,0 +1,2 @@
+g++ -Wall -c -I ./include -lboost_system -lboost_thread -lpthread src/*.cpp
+ar -cvq libtaurob_tracker_base.a *.o

@@ -1,0 +1,21 @@
+taurob_tracker:
+  arm_config:
+    # pattern is: name:ip_addr:port:offset(rad)
+    - arm_joint_0:10.0.0.121:9081:0
+    - arm_joint_1:10.0.0.121:9082:-0.1
+    - arm_joint_2:10.0.0.121:9083:0
+    - arm_joint_3:10.0.0.121:9084:0
+
+  # Position Controllers ---------------------------------------  
+  arm_traj_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - arm_joint_0
+      - arm_joint_1
+      - arm_joint_2
+      - arm_joint_3
+      
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50  

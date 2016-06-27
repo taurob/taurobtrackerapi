@@ -1,0 +1,1 @@
+sudo setcap cap_net_bind_service=ep ~/argo/devel/lib/taurob_arm_ros_control/taurob_arm_hw_interface
