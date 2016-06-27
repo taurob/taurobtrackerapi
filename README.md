@@ -2,7 +2,7 @@
 
 *taurob tracker ROS driver package*
 
- Author: Martin Schenk, taurob GmbH <martin.schenk@taurob.com>
+ Author: Martin Schenk, taurob GmbH
 
  Date: 30 May 2016
 
@@ -53,6 +53,7 @@ There are five basic components of our ROS package suite:
 
 	
 *WARNING:* Using the emergency stop package as detailed in this readme is *mandatory* for operating the robot with ROS! If you need a different implementation of the emergency stop for your project, please contact taurob. 
+
 *WARNING:* Do not attempt to run multiple instances of any node! The resulting actions are unforeseeable. When using ROS and Commander together, *always* use the provided multiplexer package! (Note: initially, the multiplexer package will not be available so ROS and Commander cannot be user together yet.)
 
 
@@ -198,9 +199,13 @@ Other parameters exist, but they are not relevant to the user. Do not change any
 **IMPORTANT:** If your robot has an arm, it MUST be calibrated before using it with ROS! See the previous section "Package configuration". If you are not sure what to do, please contact taurob.
 
 
-To bring up the driver nodes, use the tracker_bringup.launch file from the taurob_bringup package. The relevant workspace (~/rosws) is set up automatically (via entry in .bashrc). To launch all taurob driver nodes, use the following command:
+To bring up the driver nodes, use the tracker_bringup.launch file from the taurob_bringup package. As not every tracker will have the same equipment, you might want to modify the launchfile according to your requirements. Therefore, this package provides the file taurob_bringup/tracker_bringup_default.launch, which launches a tracker equipped with an arm. We recommend to copy that file and call it tracker_bringup.launch. You can now modify this new launchfile without your local changes being overwritten by a git pull.
+
+
+Once you have done that, use the following command to launch all taurob driver nodes:
 
 $ roslaunch taurob_bringup tracker_bringup.launch
+
 
 **IMPORTANT:** Once the driver nodes are up and running, the battery’s supply voltage will be published on the topic /supply_voltage. *You need to monitor that voltage during operation to prevent potential data loss and damage to the robot’s batteries!*
 If the voltage drops below 22V, or remains below 23V for extended periods of time, please shut down everything, turn the robot off and let the battery charge. If you do not monitor the voltage, and it drops further down than that, components such as the WiFi AP or the on-board PC might simply power off, and the battery could be damaged (deep-discharge)! So to prevent loss of data or damage, make sure to always monitor the supply voltage.
