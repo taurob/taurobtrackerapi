@@ -2,8 +2,10 @@
 
 *taurob tracker ROS driver package*
 
- Author: Martin Schenk, taurob GmbH
+ Author: Martin Schenk, taurob GmbH <martin.schenk@taurob.com>
+
  Date: 30 May 2016
+
  
  This repo contains drivers for the taurob tracker robot system.
  
@@ -21,10 +23,18 @@
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  
-## Compilation
+## Compilation and setup
 
 Simply place the packages in your ROS workspace, and compile using catkin_make.
 
+Before you start the drivers, you need to configure arm offsets (see also "Starting the nodes" section below). If your robot came with our packages pre-installed, these offsets will already be calibrated. Otherwise, copy or rename the calibration file as follows, depending on which arm control package you use: 
+
+ * taurob_arm_node/config/tracker.yaml.default -> taurob_arm_node/config/tracker.yaml
+
+ * taurob_arm_ros_control/config/tracker.yaml.default -> taurob_arm_ros_control/config/tracker.yaml
+
+
+Then open the yaml file with a text editor and familiarize yourself with the format of the config file. The offset is specified for each joint in rad. Now start the driver nodes with the bringup launchfile (see "Starting the nodes" section), open up rviz and let the robot model be displayed. Visually estimate a correction angle for each arm segment. Close rviz and shut down the driver nodes. Now edit the yaml file and add/subtract the offsets as you estimated them. Do this iteratively until you have approximately correct angles. You can then start the driver nodes and command the segments to an easily verifiable pose, such as the arm standing straight up. Using a digital level you can now fine-tune the calibration and correct the offsets one more time.
 
 
 ## Available features
