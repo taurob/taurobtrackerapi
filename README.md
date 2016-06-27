@@ -221,4 +221,3 @@ where 0.3 is the desired flipper angle in rad. Note that it might be more conven
 $ rostopic pub /light std_msgs/Bool true
 $ rostopic pub /bluelight std_msgs/Bool true
 
-
