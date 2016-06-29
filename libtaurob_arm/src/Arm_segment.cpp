@@ -172,7 +172,7 @@ void Arm_segment::Check_if_allowed_to_drive()
 		printf("[Arm seg. #%d (%d)] resetting friction clutch (counter: %d) - setting motor enable false\n", segment_nr, host_port, reset_friction_clutch_counter);
 		Set_motor_enable(false);
 		--reset_friction_clutch_counter;
-		if (reset_fricton_clutch_counter < 0)
+		if (reset_friction_clutch_counter < 0)
 		{
 			reset_friction_clutch_counter = 0;
 		}

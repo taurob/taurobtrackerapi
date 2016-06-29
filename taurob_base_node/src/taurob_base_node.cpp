@@ -636,6 +636,39 @@ void init()
 	ROS_INFO("Base node initialization complete");
 }
 
+void On_error(int error_code)
+{
+	if (error_code & 0x40)
+	{
+		ROS_ERROR("OVERCURRENT DETECTED! Communication with ECU has ceased to prevent hardware damage. Check if the tracks or wheels are obstructed! Afterwards, you need to restart the node to try to continue.");
+	}
+	if (error_code & 0x20)
+	{
+		ROS_WARN("The operating voltage is too high!");
+	}
+	if (error_code & 0x10)
+	{
+		ROS_WARN("Error communicating with on-board IMU");
+	}
+	if (error_code & 0x08)
+	{
+		ROS_ERROR("Motor fault detected! Communication with ECU has ceased to prevent hardware damage. Check if the tracks or wheels are obstructed! Afterwards, you need to restart the robot and the node to try to continue.");
+	}
+	if (error_code & 0x04)
+	{
+		ROS_INFO("SPI error 4 reported");
+	}
+	if (error_code & 0x02)
+	{
+		ROS_INFO("SPI error 2 reported");
+	}
+	if ((error_code & 0x01 != 0) ||
+	    (error_code & 0x80 != 0))
+	{
+		ROS_WARN("Received unknown error: code %d", error_code);
+	}
+}
+
 
 int main(int argc, char **argv) 
 {
@@ -656,6 +689,7 @@ int main(int argc, char **argv)
 
 	tb = new Taurob_base(tracker_ip, tracker_port, protocol_version, control_enabled);
 	tb->Set_on_received_callback(&On_frame_received);
+	tb->Set_on_error_callback(&On_error);
 	tb->Set_watchdog_enabled(watchdog);
 	tb->Run();
 

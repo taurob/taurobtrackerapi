@@ -63,6 +63,7 @@ class Taurob_base : public IUdpReceiver
 		virtual void On_string_received(std::string msg_data, char* from_remote_ip, int from_remote_port, int from_local_port);
 		void Feed_watchdog();
 		void Set_on_received_callback(void (*callback)());
+		void Set_on_error_callback(void (*callback)(int));
 		void Set_watchdog_enabled(bool state);
 		void Set_pause_sending(bool pause);
 		
@@ -108,6 +109,12 @@ class Taurob_base : public IUdpReceiver
 		static const int GRIPPER_CALIBRATION_MODE_OFFSET = 30000;
 		static const uint INVALID_ANGLE_VALUE = 5000;
 		static const uint UI_SERVER_PORT = 9002;
+		static const int CURRENT_AVERAGE_ELEMENTS = 3;
+		static const double MAX_TOTAL_MOTOR_CURRENT = 25.0;
+
+		bool motor_fault;
+		double avg_total_motor_current;
+		
 		
 		std::string ECU_host_ip;
 		int ECU_host_port;
@@ -118,6 +125,7 @@ class Taurob_base : public IUdpReceiver
 		SocketUDP* ui_socket;
 		
 		void (*on_receive_callback)();
+		void (*on_error_callback)(int);
 		
 		std::string latest_command_frame;
 		tTime latest_watchdog_time;
@@ -133,6 +141,7 @@ class Taurob_base : public IUdpReceiver
 		bool sending_thread_running;
 		
 		void Init_frames(); 	// to initialize internal frames to safe values
+		void Check_for_errors();
 		bool Watchdog_ok();
 					
 		Base_command_frame current_set_values;

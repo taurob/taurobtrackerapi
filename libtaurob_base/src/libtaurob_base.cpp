@@ -36,6 +36,8 @@ Taurob_base::Taurob_base(std::string host_ip, int host_port, int protocol_versio
 	ECU_host_port(host_port), 
 	pause_sending(!start_sending_initially),
 	on_receive_callback(0),
+	motor_fault(false),
+	avg_total_motor_current(0),
 	watchdog_enabled(false)
 { 
 	Set_pause_sending(pause_sending);
@@ -102,8 +104,11 @@ void Taurob_base::Sending_thread()
 			current_tx_seqno = (current_tx_seqno + 1) % 255;
 			current_set_values.sequence_number = current_tx_seqno;
 		
-			// Actual sending of the frame
-			ecu_socket->send(Base_frames::Command_to_string(current_set_values, protocol_version));
+			// Actual sending of the frame - unless we have a motor fault, in which case we cease communication alltogether
+			if (motor_fault == false)
+			{
+				ecu_socket->send(Base_frames::Command_to_string(current_set_values, protocol_version));
+			}
 			current_set_values_locker.unlock();
 			
 			// see when we had the last drive command, stop robot if it's been too long
@@ -294,6 +299,8 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 			current_get_values.error_code = received_values.error_code;
 			current_get_values.aux_in = received_values.aux_in;
 			current_get_values_locker.unlock();
+
+			Check_for_errors();
 			
 			if (on_receive_callback != 0)
 			{
@@ -312,6 +319,36 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 	}
 }
 
+void Taurob_base::Check_for_errors()
+{
+	current_get_values_locker.lock();
+	double current_total_motor_current = (current_get_values.BLDC1_current + current_get_values.BLDC2_current) / (0.101 * 25 * 0.95); 	// constants are from firmware
+	avg_total_motor_current -= avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
+	avg_total_motor_current += current_total_motor_current;
+
+	double current = avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
+	if (current > MAX_TOTAL_MOTOR_CURRENT)
+	{
+		motor_fault = true;
+		if (on_error_callback != 0)
+		{
+			on_error_callback(0x40);
+		}
+	}
+
+	if (current_get_values.error_code != 0)
+	{
+		if (current_get_values.error_code & 0x08)
+		{
+			motor_fault = true;
+		}
+		if (on_error_callback != 0)
+		{
+			on_error_callback(current_get_values.error_code);
+		}
+	}
+}
+
 void Taurob_base::Feed_watchdog()
 {
 	/*struct timeval  tv;
@@ -325,6 +362,11 @@ void Taurob_base::Feed_watchdog()
 void Taurob_base::Set_on_received_callback(void (*callback)())
 {
 	on_receive_callback = callback;
+}
+
+void Taurob_base::Set_on_error_callback(void (*callback)(int))
+{
+	on_error_callback = callback;
 }
 
 void Taurob_base::Tilt_calibrate_zero()
