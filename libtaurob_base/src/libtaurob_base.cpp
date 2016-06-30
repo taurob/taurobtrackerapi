@@ -38,7 +38,8 @@ Taurob_base::Taurob_base(std::string host_ip, int host_port, int protocol_versio
 	on_receive_callback(0),
 	motor_fault(false),
 	avg_total_motor_current(0),
-	watchdog_enabled(false)
+	watchdog_enabled(false),
+	first_frame_sent(false)
 { 
 	Set_pause_sending(pause_sending);
 }
@@ -107,7 +108,17 @@ void Taurob_base::Sending_thread()
 			// Actual sending of the frame - unless we have a motor fault, in which case we cease communication alltogether
 			if (motor_fault == false)
 			{
+				if (first_frame_sent == false)
+				{
+					// calibrate flippers to zero with first frame
+					current_set_values.gripper_pos_set = FLIPPER_CENTER_POS + FLIPPER_CALIBRATION_MODE_OFFSET;
+				}
 				ecu_socket->send(Base_frames::Command_to_string(current_set_values, protocol_version));
+				if (first_frame_sent == false)
+				{
+					current_set_values.gripper_pos_set = FLIPPER_CENTER_POS;
+					first_frame_sent = true;
+				}
 			}
 			current_set_values_locker.unlock();
 			
@@ -182,7 +193,7 @@ void Taurob_base::Init_frames()
 	current_set_values.ot_threshold_stage1 = 255;
 	current_set_values.ot_threshold_stage2 = 255;
 	current_set_values.manipulator_pos_set = INVALID_ANGLE_VALUE;
-	current_set_values.gripper_pos_set = GRIPPER_CENTER_POS;
+	current_set_values.gripper_pos_set = FLIPPER_CENTER_POS;
 	current_set_values_locker.unlock();
 	
 	current_get_values_locker.lock();
@@ -408,7 +419,7 @@ void Taurob_base::Set_gripper_angle(float degrees)
 	if (!pause_sending && !receive_pause)
 	{
 		// convert from degrees to an ECU-compatible number
-		int setpos = (int)(-degrees * GRIPPER_DEGREES_TO_PULSES_FACTOR + GRIPPER_CENTER_POS);
+		int setpos = (int)(-degrees * FLIPPER_DEGREES_TO_PULSES_FACTOR + FLIPPER_CENTER_POS);
 		
 		current_set_values_locker.lock();
 		current_set_values.gripper_pos_set = setpos;

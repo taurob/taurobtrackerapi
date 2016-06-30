@@ -104,9 +104,9 @@ class Taurob_base : public IUdpReceiver
 		static const double wheel_diameter = 0.303;
 		static const double track_width = 0.55;
 		static const double turning_geometry_factor = 1.476; // by experimentation
-		static const int GRIPPER_CENTER_POS = 6000; // internal representation of 0 degrees
-		static const double GRIPPER_DEGREES_TO_PULSES_FACTOR = 50; // factor to convert an angle in degrees to hall signal pulses
-		static const int GRIPPER_CALIBRATION_MODE_OFFSET = 30000;
+		static const int FLIPPER_CENTER_POS = 6000; // internal representation of 0 degrees
+		static const double FLIPPER_DEGREES_TO_PULSES_FACTOR = 50; // factor to convert an angle in degrees to hall signal pulses
+		static const int FLIPPER_CALIBRATION_MODE_OFFSET = 30000;
 		static const uint INVALID_ANGLE_VALUE = 5000;
 		static const uint UI_SERVER_PORT = 9002;
 		static const int CURRENT_AVERAGE_ELEMENTS = 3;
@@ -135,6 +135,7 @@ class Taurob_base : public IUdpReceiver
 		
 		bool pause_sending; 	// reflects if user wants to pause sending
 		bool receive_pause; 	// reflects if we didn't receive frames for some time
+		bool first_frame_sent;
 
 		void Sending_thread();
 		thread sending_thread;
