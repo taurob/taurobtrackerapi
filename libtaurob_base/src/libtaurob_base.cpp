@@ -42,7 +42,7 @@ Taurob_base::Taurob_base(std::string host_ip, int host_port, int protocol_versio
 	first_frame_sent(false)
 { 
 	Set_pause_sending(pause_sending);
-	backup_gripper_pos = 6000;
+	backup_gripper_pos = FLIPPER_CENTER_POS;
 	FILE* backup_flipper_file = fopen("flipper_pos.txt", "r");
 	if (backup_flipper_file != 0)
 	{
@@ -134,7 +134,7 @@ void Taurob_base::Sending_thread()
 
 				if (first_frame_sent == false)
 				{
-					current_set_values.gripper_pos_set = FLIPPER_CENTER_POS;
+					current_set_values.gripper_pos_set = backup_gripper_pos;
 					first_frame_sent = true;
 				}
 			}
@@ -212,7 +212,7 @@ void Taurob_base::Init_frames()
 	current_set_values.ot_threshold_stage1 = 255;
 	current_set_values.ot_threshold_stage2 = 255;
 	current_set_values.manipulator_pos_set = INVALID_ANGLE_VALUE;
-	current_set_values.gripper_pos_set = FLIPPER_CENTER_POS;
+	current_set_values.gripper_pos_set = backup_gripper_pos;
 	current_set_values_locker.unlock();
 	
 	current_get_values_locker.lock();
