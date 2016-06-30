@@ -114,27 +114,31 @@ void Taurob_base::Sending_thread()
 			current_set_values.sequence_number = current_tx_seqno;
 		
 			// Actual sending of the frame - unless we have a motor fault, in which case we cease communication alltogether
+
 			if (motor_fault == false)
 			{
 				tTimeDuration dt_since_last_status = boost::posix_time::microsec_clock::universal_time() - latest_rx_frame_time;
 				if (first_frame_sent == false)
 				{
 					// calibrate flippers to last saved position with first frame
+					printf("[Base ECU] initializing flipper angle with previously saved value of %u\n", backup_gripper_pos);
 					current_set_values.gripper_pos_set = backup_gripper_pos + FLIPPER_CALIBRATION_MODE_OFFSET;
 				}
 				else if (dt_since_last_status.total_milliseconds() > 500)
 				{
-					printf("[Base ECU] Recalibrating flipper pos to %d because last rx frame is %d ms old\n", backup_gripper_pos, (int)dt_since_last_status.total_milliseconds());
 					// no status frame since >500ms => calibrate flipper to last known pos
 					current_set_values.gripper_pos_set = backup_gripper_pos + FLIPPER_CALIBRATION_MODE_OFFSET;
 				}
+
 				ecu_socket->send(Base_frames::Command_to_string(current_set_values, protocol_version));
+
 				if (first_frame_sent == false)
 				{
 					current_set_values.gripper_pos_set = FLIPPER_CENTER_POS;
 					first_frame_sent = true;
 				}
 			}
+
 			current_set_values_locker.unlock();
 			
 			// see when we had the last drive command, stop robot if it's been too long
@@ -284,7 +288,6 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 	else if (from_local_port != UI_SERVER_PORT)
 	{
 		//DEBUG("Publishing ECU Output Message: %s\n", msg_data.c_str());
-
 		current_get_values_locker.lock();
 		latest_rx_frame_time = boost::posix_time::microsec_clock::universal_time();
 		current_get_values_locker.unlock();
@@ -348,7 +351,7 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 		}
 		else
 		{
-			DEBUG("[Base ECU] Status frame has invalid format -- doing nothing.\n");
+			printf("[Base ECU] Status frame has invalid format -- doing nothing.\n");
 		}			
 	}
 }
@@ -357,6 +360,7 @@ void Taurob_base::Check_for_errors()
 {
 	current_get_values_locker.lock();
 	double current_total_motor_current = (current_get_values.BLDC1_current + current_get_values.BLDC2_current) / (0.101 * 25 * 0.95); 	// constants are from firmware
+	current_get_values_locker.unlock();
 	avg_total_motor_current -= avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
 	avg_total_motor_current += current_total_motor_current;
 
