@@ -39,10 +39,17 @@ Taurob_base::Taurob_base(std::string host_ip, int host_port, int protocol_versio
 	motor_fault(false),
 	avg_total_motor_current(0),
 	watchdog_enabled(false),
-	first_frame_sent(false),
-	backup_gripper_pos(6000)
+	first_frame_sent(false)
 { 
 	Set_pause_sending(pause_sending);
+	backup_gripper_pos = 6000;
+	FILE* backup_flipper_file = fopen("flipper_pos.txt", "r");
+	if (backup_flipper_file != 0)
+	{
+		fscanf(backup_flipper_file, "%u", &backup_gripper_pos);
+		fclose(backup_flipper_file);
+		printf("[Base ECU] Initializing flipper with backed-up position %u\n", backup_gripper_pos);
+	}
 }
 
 Taurob_base::~Taurob_base() 
@@ -112,8 +119,8 @@ void Taurob_base::Sending_thread()
 				tTimeDuration dt_since_last_status = boost::posix_time::microsec_clock::universal_time() - latest_rx_frame_time;
 				if (first_frame_sent == false)
 				{
-					// calibrate flippers to zero with first frame
-					current_set_values.gripper_pos_set = FLIPPER_CENTER_POS + FLIPPER_CALIBRATION_MODE_OFFSET;
+					// calibrate flippers to last saved position with first frame
+					current_set_values.gripper_pos_set = backup_gripper_pos + FLIPPER_CALIBRATION_MODE_OFFSET;
 				}
 				else if (dt_since_last_status.total_milliseconds() > 500)
 				{
@@ -320,6 +327,13 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 			current_get_values_locker.unlock();
 
 			backup_gripper_pos = received_values.gripper_pos_get;
+			FILE* backup_flipper_file = fopen("flipper_pos.txt", "w+");
+			if (backup_flipper_file != 0)
+			{
+				fprintf(backup_flipper_file, "%u", backup_gripper_pos);
+				fclose(backup_flipper_file);
+			}			
+			
 			Check_for_errors();
 			
 			if (on_receive_callback != 0)
