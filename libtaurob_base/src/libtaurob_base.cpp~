@@ -39,8 +39,7 @@ Taurob_base::Taurob_base(std::string host_ip, int host_port, int protocol_versio
 	motor_fault(false),
 	avg_total_motor_current(0),
 	watchdog_enabled(false),
-	first_frame_sent(false),
-	backup_gripper_pos(6000)
+	first_frame_sent(false)
 { 
 	Set_pause_sending(pause_sending);
 }
