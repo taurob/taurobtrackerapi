@@ -103,6 +103,7 @@ Publisher pub_error_code;
 Publisher pub_aux_bits;
 Publisher pub_docked;
 Publisher pub_remaining_optime;
+Publisher pub_current;
 
 Taurob_base* tb = 0;
 
@@ -311,6 +312,10 @@ void publish_misc_data()
     motor_driver_temperature = get<0>(tb->Get_temperatures());
     fdata.data = motor_driver_temperature;
     pub_temperature.publish(fdata);
+
+    double current = tb->Get_average_total_current();
+    fdata.data = current;
+    pub_current.publish(fdata);
 }
 
 void publish_imu()
@@ -604,6 +609,7 @@ void init()
 	pub_aux_bits = nh->advertise<std_msgs::Byte>("aux_bits", 1);
     pub_remaining_optime = nh->advertise<std_msgs::Float32>("remaining_optime", 1);
 	pub_docked = nh->advertise<std_msgs::Bool>("robot_docked", 1);
+	pub_current = nh->advertise<std_msgs::Float32>("total_current", 1);
 
     updater->setHardwareID("taurob_base");
 

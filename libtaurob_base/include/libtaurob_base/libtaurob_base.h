@@ -85,9 +85,10 @@ class Taurob_base : public IUdpReceiver
 		
 		// getters
 		tuple<float, float> Get_wheel_speeds(); 				// U/min at wheels (Tuple order: left, right)
-		tuple<float, float> Get_motor_currents(); 				// Amperes (Tuple order: left, right)
+		tuple<float, float> Get_motor_currents_raw(); 				// raw value, needs multiplication by a factor to become Ampere (Tuple order: left, right)
 		tuple<float, float> Get_motor_distance(); 				// Meters, do not use
 		float Get_gripper_angle(); 									// degrees
+		double Get_average_total_current(); 	// Ampere
 		float Get_manipulator_base_angle(); 						// degrees, deprecated
 		float Get_supply_voltage(); 								// Volts
 		tuple<float, float, float, float> Get_temperatures(); 	// degrees Celsius

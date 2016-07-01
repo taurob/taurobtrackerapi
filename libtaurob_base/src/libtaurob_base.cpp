@@ -360,9 +360,9 @@ void Taurob_base::Check_for_errors()
 {
 	current_get_values_locker.lock();
 	double current_total_motor_current = (current_get_values.BLDC1_current + current_get_values.BLDC2_current) / (0.101 * 25 * 0.95); 	// constants are from firmware
-	current_get_values_locker.unlock();
 	avg_total_motor_current -= avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
 	avg_total_motor_current += current_total_motor_current;
+	current_get_values_locker.unlock();
 
 	double current = avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
 	if (current > MAX_TOTAL_MOTOR_CURRENT)
@@ -533,11 +533,20 @@ tuple<float, float> Taurob_base::Get_wheel_speeds()
 	return ret;
 }
 
-tuple<float, float> Taurob_base::Get_motor_currents()
+tuple<float, float> Taurob_base::Get_motor_currents_raw()
 {
 	tuple<float, float> ret;
 	current_get_values_locker.lock();
 	ret = make_tuple(current_get_values.BLDC1_current, current_get_values.BLDC2_current);
+	current_get_values_locker.unlock();
+	return ret;
+}
+
+double Taurob_base::Get_average_total_current()
+{
+	double ret;
+	current_get_values_locker.lock();
+	ret = avg_total_motor_current;
 	current_get_values_locker.unlock();
 	return ret;
 }
