@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="watchdog_enabled" default="false" />
+  <arg name="robot_name" default="default" />
+
+	<node pkg="taurob_flipper_node" type="taurob_flipper_node" name="taurob_flipper_node" output="screen">	
+		<param name="watchdog" value="$(arg watchdog_enabled)" />
+ 		<param name="control_enabled_at_startup" value="true" />
+		<param name="ip_address" value="10.0.0.41" />
+		<param name="port" value="1111" />
+		<param name="pos_offset" value="0" />
+		<remap from="/jointstate_status" to="/joint_states" />
+	</node>
+	
+</launch>
