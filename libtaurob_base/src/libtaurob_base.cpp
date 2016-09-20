@@ -566,6 +566,9 @@ float Taurob_base::Get_gripper_angle()
 	current_get_values_locker.lock();
 	ret = current_get_values.gripper_pos_get;
 	current_get_values_locker.unlock();
+
+	// convet return value from raw number to degrees
+	ret = -((ret - (float)FLIPPER_CENTER_POS) / FLIPPER_DEGREES_TO_PULSES_FACTOR);
 	return ret;
 }
 
