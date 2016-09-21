@@ -112,6 +112,8 @@ class Arm_segment : IUdpReceiverBinary
 		unsigned char Get_bitfield();
 		
 		void Set_position(float pos);
+		void Set_motor_enable(bool enable);
+		void Set_check_for_static_motor(bool check);
 
 		void Print_timestamp_debug();
 		
@@ -156,7 +158,6 @@ class Arm_segment : IUdpReceiverBinary
 		
 		void Init_frames(); 	// to initialize internal frames to safe values
 		void Check_if_allowed_to_drive(); 	// decides if motor enable bit is set or not
-		void Set_motor_enable(bool enable);
 					
 		Arm_command_frame current_set_values;
 		Arm_status_frame current_get_values;
