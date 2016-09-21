@@ -111,6 +111,9 @@ void Flipper::Check_if_allowed_to_drive()
 	current_set_values_locker.unlock();
 	if (want_to_drive == false) return;
 
+	// TODO: static counter disabled for now as u-ecu is currently unable to report position correctly
+	// enable this as soon as valid flipper position is available
+	/*
 	if (segment_static_counter > SEGMENT_STATIC_COUNTER_MAX)
 	{
 		DEBUG("[Flipper] Static counter reached max, disabling movement\n");
@@ -118,6 +121,7 @@ void Flipper::Check_if_allowed_to_drive()
 		segment_static_counter = 0;
 		return;
 	}
+	*/
 	if ((boost::posix_time::microsec_clock::local_time() - latest_drive_command_time).total_milliseconds() >= MAX_DRIVE_TIME)
 	{
 		DEBUG("[Flipper] Drive command timeout, disabling movement\n");
