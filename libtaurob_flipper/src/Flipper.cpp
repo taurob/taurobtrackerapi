@@ -25,7 +25,7 @@
 
 using namespace boost;
 
-bool debug_output_enabled = false;
+bool debug_output_enabled = true;
 
 Flipper::Flipper(std::string host_ip, 
 			 int host_port, 
@@ -107,7 +107,7 @@ void Flipper::Check_if_allowed_to_drive()
 	// first of all, see if we want to drive in the first place (check for motor enable bit)
 	bool want_to_drive = false;
 	current_set_values_locker.lock();
-	if ((current_set_values.bitfield & 0x01) != 0) want_to_drive = true;
+	if ((current_set_values.bitfield & 0x40) != 0) want_to_drive = true;
 	current_set_values_locker.unlock();
 	if (want_to_drive == false) return;
 
@@ -120,7 +120,7 @@ void Flipper::Check_if_allowed_to_drive()
 	}
 	if ((boost::posix_time::microsec_clock::local_time() - latest_drive_command_time).total_milliseconds() >= MAX_DRIVE_TIME)
 	{
-		DEBUG("[Flipper] Drive timeout, disabling movement\n");
+		DEBUG("[Flipper] Drive command timeout, disabling movement\n");
 		Set_motor_enable(false);
 		return;
 	}
@@ -129,7 +129,7 @@ void Flipper::Check_if_allowed_to_drive()
 	// this is in addition to the watchdog
 	if (Is_uptodate() == false)
 	{
-		DEBUG("[Flipper]  Receive timeout, disabling movement\n");
+		DEBUG("[Flipper] Timeout receiving status frame from ECU, disabling movement\n");
 		Set_motor_enable(false);
 		return;
 	}
