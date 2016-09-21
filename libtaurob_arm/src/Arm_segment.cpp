@@ -42,6 +42,7 @@ Arm_segment::Arm_segment(std::string name,
 	segment_static_counter(0),
 	watchdog_enabled(false),
 	reset_ecu(false),
+	force_motor_enable(false),
 	check_for_static_motor(true),
 	reset_friction_clutch_counter(0),
 	pause_sending(!start_sending_initially),
@@ -64,6 +65,7 @@ Arm_segment::Arm_segment(std::string name,
 	segment_static_counter(0),
 	watchdog_enabled(false),
 	reset_ecu(false),
+	force_motor_enable(false),
 	check_for_static_motor(true),
 	reset_friction_clutch_counter(0),
 	pause_sending(!start_sending_initially),
@@ -134,14 +136,15 @@ void Arm_segment::Check_if_allowed_to_drive()
 
 	// if getpos == setpos, do not set motor enable (there is a firmware bug as of now, but also it's not necessary)
 	bool same_pos = false;
-	current_get_values_locker.lock();
-	current_set_values_locker.lock();
 
 	// because we transform int->float and rad->deg and back, it might 
 	// happen that "get=set" is off by one due to float rounding. have a tolerance 
 	// for that.
 	if (check_for_static_motor)
 	{
+		current_get_values_locker.lock();
+		current_set_values_locker.lock();
+	
 		if (current_set_values.set_position == current_get_values.position ||
 			(((current_set_values.set_position + 1) % max_input_value) == current_get_values.position) ||
 			(current_set_values.set_position == ((current_get_values.position + 1) % max_input_value)))
@@ -233,6 +236,11 @@ void Arm_segment::Sending_thread()
 			if (pause_sending == false)
 			{
 				Check_if_allowed_to_drive();
+				if (force_motor_enable)
+				{
+					Set_motor_enable(true);
+					force_motor_enable = false;
+				}
 					
 				current_set_values_locker.lock();
 				current_tx_seqno = (current_tx_seqno + 1) % 255;
@@ -240,9 +248,9 @@ void Arm_segment::Sending_thread()
 DEBUG("[Arm seg. #%d (%d)] Motor enable: %d\n", segment_nr, host_port, current_set_values.bitfield);
 				Arm_frames::Command_to_bytes(current_set_values, sendbuffer);
 				current_set_values_locker.unlock();
-				
+
 				ecu_socket->send(sendbuffer, Arm_frames::COMMAND_FRAME_LENGTH);
-					
+
 				//DEBUG("Segment %d (%d) sent: %d\n", segment_nr, host_port, current_set_values.set_position);
 			}
 		}
@@ -504,6 +512,11 @@ void Arm_segment::Set_motor_enable(bool enable)
 		}
 		current_set_values_locker.unlock();
 	}
+}
+
+void Arm_segment::Force_motor_enable_once()
+{
+	force_motor_enable = true;
 }
 
 std::string Arm_segment::Get_name()

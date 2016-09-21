@@ -206,11 +206,11 @@ void Arm::Set_check_for_static_motor(bool check)
 	}
 }
 
-void Arm::Set_motor_enable(int segment, bool enable)
+void Arm::Force_motor_enable_once(int segment)
 {
 	if (segment < segments.size())
 	{			
-		segments[segment]->Set_motor_enable(enable);
+		segments[segment]->Force_motor_enable_once();
 	}
 	else
 	{

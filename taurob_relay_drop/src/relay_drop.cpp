@@ -41,7 +41,6 @@ int main(int argc, char** argv)
 	configure(&nh);
 	
 	man = new Arm(man_config, true);
-	man->Set_motor_enable(0, false);
 	man->Set_watchdog_enabled(true);
 	man->Set_check_for_static_motor(false);
 	man->Run();
@@ -56,12 +55,11 @@ int main(int argc, char** argv)
 		{
 			ROS_INFO("triggering");
 			drop_counter--;
-			man->Set_motor_enable(0, true);
+			man->Force_motor_enable_once(0);
 		}
 		else if (drop_counter > 0)
 		{
 			drop_counter--;
-			man->Set_motor_enable(0, false);
 		}
 		wait_interval.sleep();
 	}

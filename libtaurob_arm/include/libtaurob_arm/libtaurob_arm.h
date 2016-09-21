@@ -112,8 +112,8 @@ class Arm_segment : IUdpReceiverBinary
 		unsigned char Get_bitfield();
 		
 		void Set_position(float pos);
-		void Set_motor_enable(bool enable);
 		void Set_check_for_static_motor(bool check);
+		void Force_motor_enable_once();
 
 		void Print_timestamp_debug();
 		
@@ -126,6 +126,7 @@ class Arm_segment : IUdpReceiverBinary
 		int ui_server_base_port;
 		int reset_friction_clutch_counter;
 		bool check_for_static_motor;
+		bool force_motor_enable;
 
 		static const int WATCHDOG_MAX_TIME = 400;	// ms
 		static const int SEGMENT_STATIC_TOLERANCE = 1;  // degrees * (4096/360)
@@ -158,6 +159,7 @@ class Arm_segment : IUdpReceiverBinary
 		
 		void Init_frames(); 	// to initialize internal frames to safe values
 		void Check_if_allowed_to_drive(); 	// decides if motor enable bit is set or not
+		void Set_motor_enable(bool enable);
 					
 		Arm_command_frame current_set_values;
 		Arm_status_frame current_get_values;
@@ -181,7 +183,7 @@ class Arm : IReceiveCallbackRelay
 		void Set_watchdog_enabled(bool state);
 		void Set_pause_sending(bool pause);
 		void Set_check_for_static_motor(bool check);
-		void Set_motor_enable(int segment, bool enable);
+		void Force_motor_enable_once(int segment);
 		
 		bool Is_uptodate();
 		bool Watchdog_ok();
