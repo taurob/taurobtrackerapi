@@ -183,8 +183,8 @@ void On_claw_receive()
 
 int main(int argc, char **argv) 
 {
-	ROS_INFO("starting arm node");
-	ros::init(argc, argv, "taurob_arm_node");
+	ROS_INFO("starting claw node");
+	ros::init(argc, argv, "taurob_claw_node");
 	
 	NodeHandle rosnh;
 	nh = &rosnh;

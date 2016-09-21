@@ -198,6 +198,26 @@ void Arm::Set_pause_sending(bool pause)
 	}
 }
 
+void Arm::Set_check_for_static_motor(bool check)
+{
+	for (int i = 0; i < segments.size(); i++)
+	{
+		segments[i]->Set_check_for_static_motor(check);
+	}
+}
+
+void Arm::Set_motor_enable(int segment, bool enable)
+{
+	if (segment < segments.size())
+	{			
+		segments[segment]->Set_motor_enable(enable);
+	}
+	else
+	{
+		printf("## ERROR: tried to set motor enable of segment %d, but we only have %d!", segment, (int)segments.size());
+	}
+}
+
 std::string Arm::Get_segment_name(int segment)
 {
 	std::string ret;

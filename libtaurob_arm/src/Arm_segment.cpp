@@ -42,6 +42,7 @@ Arm_segment::Arm_segment(std::string name,
 	segment_static_counter(0),
 	watchdog_enabled(false),
 	reset_ecu(false),
+	check_for_static_motor(true),
 	reset_friction_clutch_counter(0),
 	pause_sending(!start_sending_initially),
 	ui_server_base_port(ui_server_base_port),
@@ -63,6 +64,7 @@ Arm_segment::Arm_segment(std::string name,
 	segment_static_counter(0),
 	watchdog_enabled(false),
 	reset_ecu(false),
+	check_for_static_motor(true),
 	reset_friction_clutch_counter(0),
 	pause_sending(!start_sending_initially),
 	ui_server_base_port(DEFAULT_UI_SERVER_BASE_PORT),
@@ -138,29 +140,33 @@ void Arm_segment::Check_if_allowed_to_drive()
 	// because we transform int->float and rad->deg and back, it might 
 	// happen that "get=set" is off by one due to float rounding. have a tolerance 
 	// for that.
-	if (current_set_values.set_position == current_get_values.position ||
-		(((current_set_values.set_position + 1) % max_input_value) == current_get_values.position) ||
-		(current_set_values.set_position == ((current_get_values.position + 1) % max_input_value)))
+	if (check_for_static_motor)
 	{
-		same_pos = true;
-	}
-	current_set_values_locker.unlock();
-	current_get_values_locker.unlock();
+		if (current_set_values.set_position == current_get_values.position ||
+			(((current_set_values.set_position + 1) % max_input_value) == current_get_values.position) ||
+			(current_set_values.set_position == ((current_get_values.position + 1) % max_input_value)))
+		{
+			same_pos = true;
+		}
+		current_set_values_locker.unlock();
+		current_get_values_locker.unlock();
 
-	if (same_pos == true)
-	{
-		Set_motor_enable(false); 	// set motor enable locks set, so we mustn't call it inside a set locker
-		DEBUG("[Arm seg. #%d (%d)] Clearing motor enable because setpos=getpos\n", segment_nr, host_port);
-		return;
-	}
+		if (same_pos == true)
+		{
+			Set_motor_enable(false); 	// set motor enable locks set, so we mustn't call it inside a set locker
+			DEBUG("[Arm seg. #%d (%d)] Clearing motor enable because setpos=getpos\n", segment_nr, host_port);
+			return;
+		}
 
-	if (segment_static_counter > SEGMENT_STATIC_COUNTER_MAX)
-	{
-		DEBUG("[Arm seg. #%d (%d)] Static counter reached max, disabling movement\n", segment_nr, host_port);
-		Set_motor_enable(false);
-		segment_static_counter = 0;
-		return;
+		if (segment_static_counter > SEGMENT_STATIC_COUNTER_MAX)
+		{
+			DEBUG("[Arm seg. #%d (%d)] Static counter reached max, disabling movement\n", segment_nr, host_port);
+			Set_motor_enable(false);
+			segment_static_counter = 0;
+			return;
+		}
 	}
+		
 	if ((boost::posix_time::microsec_clock::local_time() - latest_drive_command_time).total_milliseconds() >= MAX_DRIVE_TIME)
 	{
 		DEBUG("[Arm seg. #%d (%d)] Drive timeout, disabling movement\n", segment_nr, host_port);
@@ -473,6 +479,11 @@ void Arm_segment::Set_position(float pos)
 	{
 		if (pos != pos) printf("[Arm seg. #%d (%d)] Received NaN in Set_position!", segment_nr, host_port);
 	}
+}
+
+void Arm_segment::Set_check_for_static_motor(bool check)
+{
+	check_for_static_motor = check;
 }
 
 void Arm_segment::Set_motor_enable(bool enable)

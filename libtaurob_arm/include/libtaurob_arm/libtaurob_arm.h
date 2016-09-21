@@ -123,6 +123,7 @@ class Arm_segment : IUdpReceiverBinary
 		int max_input_value;
 		int ui_server_base_port;
 		int reset_friction_clutch_counter;
+		bool check_for_static_motor;
 
 		static const int WATCHDOG_MAX_TIME = 400;	// ms
 		static const int SEGMENT_STATIC_TOLERANCE = 1;  // degrees * (4096/360)
@@ -178,6 +179,8 @@ class Arm : IReceiveCallbackRelay
 		void Set_on_friction_clutch_slipped_callback(void (*callback)(int segment_nr));
 		void Set_watchdog_enabled(bool state);
 		void Set_pause_sending(bool pause);
+		void Set_check_for_static_motor(bool check);
+		void Set_motor_enable(int segment, bool enable);
 		
 		bool Is_uptodate();
 		bool Watchdog_ok();
