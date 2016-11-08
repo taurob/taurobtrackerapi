@@ -68,6 +68,27 @@ class IReceiveCallbackRelay
 		virtual void On_friction_clutch_slipped(int segment_nr) = 0;
 };
 
+
+// used for arm and flippers
+class IAbstract_taurob_segment
+{
+	public:
+		virtual void Run() = 0;
+		virtual void Stop() = 0;		   
+		virtual void Feed_watchdog() = 0;
+		virtual void Set_on_received_callback(void (*callback)(int segment_nr)) = 0;
+		virtual void Set_watchdog_enabled(bool state) = 0;
+		virtual void Set_pause_sending(bool pause) = 0;		
+		virtual bool Is_uptodate() = 0;
+		virtual bool Watchdog_ok() = 0;		
+		virtual int Get_segment_count() = 0;
+		virtual std::string Get_segment_name(int segment) = 0;
+		virtual float Get_position(int segment) = 0;
+		virtual float Get_current(int segment) = 0;
+		virtual float Get_temperature(int segment) = 0;
+		virtual void Set_position(int segment, float pos) = 0;
+};
+
 class Arm_segment : IUdpReceiverBinary
 {
 	public:
@@ -90,6 +111,7 @@ class Arm_segment : IUdpReceiverBinary
 					bool start_sending_initially);
 		~Arm_segment();
 		
+		// IUdpReceiverBinary
 		void On_data_received(unsigned char* data, int len, char* from_remote_ip, int from_remote_port, int from_local_port);
 		
 		void Run();
@@ -97,24 +119,25 @@ class Arm_segment : IUdpReceiverBinary
 		void Feed_watchdog();
 		void Set_watchdog_enabled(bool state);
 		void Set_on_received_callback(IReceiveCallbackRelay* relay);		
-		void Set_pause_sending(bool pause);
-		
+		void Set_pause_sending(bool pause);		
 		bool Is_uptodate();
-		bool Watchdog_ok();
-		void Reset_friction_clutch();
-		void Reset_connection();
-		
+		bool Watchdog_ok();		
 		std::string Get_name();
 		float Get_position();
 		float Get_current();
 		float Get_temperature();
+		void Set_position(float pos);
+		
+		// class-specific
+		void Reset_friction_clutch();
+		void Reset_connection();
+		void Set_check_for_static_motor(bool check);
+		void Force_motor_enable_once();
+		
 		unsigned char Get_error_code();
 		unsigned char Get_bitfield();
 		
-		void Set_position(float pos);
-		void Set_check_for_static_motor(bool check);
-		void Force_motor_enable_once();
-
+		
 		void Print_timestamp_debug();
 		
 	private:
@@ -168,43 +191,41 @@ class Arm_segment : IUdpReceiverBinary
 		int current_tx_seqno;
 };
 
-class Arm : IReceiveCallbackRelay
+class Arm : IReceiveCallbackRelay, IAbstract_taurob_segment
 {
 	public:	
 		Arm(Arm_config configuration, bool control_enabled_initially);
 		~Arm();
 		
+		// IReceiveCallbackRelay members		
+		void On_segment_receive(int segment_nr);
+		void On_friction_clutch_slipped(int segment_nr);
+		
+		// IAbstract_taurob_segment
 		void Run();
-		void Stop();
-		   
+		void Stop();		   
 		void Feed_watchdog();
 		void Set_on_received_callback(void (*callback)(int segment_nr));
-		void Set_on_friction_clutch_slipped_callback(void (*callback)(int segment_nr));
 		void Set_watchdog_enabled(bool state);
-		void Set_pause_sending(bool pause);
-		void Set_check_for_static_motor(bool check);
-		void Force_motor_enable_once(int segment);
-		
+		void Set_pause_sending(bool pause);		
 		bool Is_uptodate();
-		bool Watchdog_ok();
-		
+		bool Watchdog_ok();		
 		int Get_segment_count();
-		//tTime Get_last_frame_timestamp();
-		
 		std::string Get_segment_name(int segment);
 		float Get_position(int segment);
 		float Get_current(int segment);
 		float Get_temperature(int segment);
+		void Set_position(int segment, float pos);
+		
+		// class-specific
 		unsigned char Get_error_code(int segment);
 		unsigned char Get_bitfield(int segment);
+		void Set_check_for_static_motor(bool check);
+		void Force_motor_enable_once(int segment);
 	
-		void Set_position(int segment, float pos);
+		void Set_on_friction_clutch_slipped_callback(void (*callback)(int segment_nr));
 		void Reset_friction_clutch(); 	// resets friction clutch for entire arm, because we don't want just one segment stopping
-		
-		// IReceiveCallbackRelay members		
-		void On_segment_receive(int segment_nr);
-		void On_friction_clutch_slipped(int segment_nr);
-	
+			
 	private:
 		static const int MIN_UPTODATE_WARNING_INTERVAL = 3000; // milliseconds
 

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  ******************************************************************************/
- 
- #include "libtaurob_arm/libtaurob_arm.h"
+
+#include "libtaurob_arm/libtaurob_arm.h"
 
 using namespace boost;
 
@@ -63,11 +63,11 @@ Arm_segment::Arm_segment(std::string name,
 	segment_nr(segment_nr),
 	segment_name(name),
 	segment_static_counter(0),
+	reset_friction_clutch_counter(0),
 	watchdog_enabled(false),
 	reset_ecu(false),
 	force_motor_enable(false),
 	check_for_static_motor(true),
-	reset_friction_clutch_counter(0),
 	pause_sending(!start_sending_initially),
 	ui_server_base_port(DEFAULT_UI_SERVER_BASE_PORT),
 	max_input_value(DEFAULT_MAX_INPUT_VALUE)
@@ -319,6 +319,8 @@ void Arm_segment::Init_frames()
 	current_get_values_locker.lock();
 	current_get_values.position = INVALID_ANGLE_VALUE;
 	current_get_values_locker.unlock();
+
+	reset_friction_clutch_counter = 0;
 }
 
 // attention: this not only sets watchdog, but also command_rx_timeout_enabled!
@@ -459,7 +461,7 @@ void Arm_segment::Set_position(float pos)
 	if (!pause_sending && !receive_pause && pos==pos) 	// the pos==pos expression is a NaN check
 	{
 		bool changed = false;
-		DEBUG("[Arm seg. #%d] (%d) received arm set pos to %f\n", segment_nr, host_port, pos);	
+		//DEBUG("[Arm seg. #%d] (%d) received arm set pos to %f\n", segment_nr, host_port, pos);	
 		pos *= (180.0f/M_PI);  	// convert from rad to deg
 		uint16_t new_set_pos = (uint16_t)((fmod((360.0 + pos), 360.0)) * ((double)max_input_value / 360.0));
 		//DEBUG("[Arm seg. #%d]  this translates to %d\n", segment_nr, new_set_pos);
@@ -496,9 +498,6 @@ void Arm_segment::Set_check_for_static_motor(bool check)
 
 void Arm_segment::Set_motor_enable(bool enable)
 {
-	//if (enable) printf("Set motor enable TRUE\n");
-	//else printf("Set motor enable FALSE\n");
-	
 	if (!pause_sending && !receive_pause)
 	{
 		current_set_values_locker.lock();

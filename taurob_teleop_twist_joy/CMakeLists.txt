@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(taurob_teleop_twist_joy)
 
-find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp roslaunch roslint sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp roslaunch roslint sensor_msgs trajectory_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs
+  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs trajectory_msgs
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
@@ -25,10 +25,10 @@ set_target_properties(${PROJECT_NAME}_node
 #  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #install(DIRECTORY include/${PROJECT_NAME}/
-#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}) 
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 #install(DIRECTORY launch config
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}) 
+#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 roslint_cpp()
 roslint_add_test()

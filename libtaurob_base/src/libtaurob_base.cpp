@@ -288,6 +288,7 @@ void Taurob_base::On_string_received(std::string msg_data, char* from_remote_ip,
 	else if (from_local_port != UI_SERVER_PORT)
 	{
 		//DEBUG("Publishing ECU Output Message: %s\n", msg_data.c_str());
+
 		current_get_values_locker.lock();
 		latest_rx_frame_time = boost::posix_time::microsec_clock::universal_time();
 		current_get_values_locker.unlock();
@@ -595,7 +596,7 @@ tuple<float, float, float, float> Taurob_base::Get_temperatures()
 {
 	tuple<float, float, float, float> ret;
 	current_get_values_locker.lock();
-	ret = make_tuple(current_get_values.temp1 - 40,
+	ret = make_tuple((float)current_get_values.temp1 - 40.0f,
 							current_get_values.temp2,
 							current_get_values.temp3,
 							current_get_values.temp4);

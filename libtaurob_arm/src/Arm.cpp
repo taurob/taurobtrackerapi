@@ -23,6 +23,7 @@
  
 #include <libtaurob_arm/libtaurob_arm.h>
 
+
 Arm::Arm(Arm_config configuration, bool control_enabled_initially) : on_receive_callback(0)
 {
 	config_successful = false;

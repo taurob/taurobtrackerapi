@@ -4,7 +4,10 @@ project(libtaurob_flipper)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS libtaurob_tools)
+find_package(catkin REQUIRED COMPONENTS
+	libtaurob_tools
+	libtaurob_arm
+)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -77,7 +80,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
    INCLUDE_DIRS include
    LIBRARIES taurob_flipper
-   CATKIN_DEPENDS libtaurob_tools
+   CATKIN_DEPENDS libtaurob_tools libtaurob_arm
 #  DEPENDS system_lib
 )
 
@@ -94,7 +97,7 @@ include_directories(
 
 ## Declare a cpp library
 add_library(taurob_flipper
-   src/Flipper.cpp src/Flipper_frames.cpp
+   src/Flipper.cpp
 )
 
 ## Declare a cpp executable
@@ -102,13 +105,12 @@ add_library(taurob_flipper
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(taurob_flipper libtaurob_tools)
+add_dependencies(taurob_flipper libtaurob_tools libtaurob_arm)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(taurob_flipper
    boost_thread
    boost_system
-   boost_date_time
    ${catkin_LIBRARIES}
 )
 

@@ -114,6 +114,7 @@ diagnostic_updater::HeaderlessTopicDiagnostic* ecu_coms_diag = 0;
 diagnostic_updater::Updater* updater;
 diagnostic_updater::FunctionDiagnosticTask* temperature_checker;
 diagnostic_updater::FunctionDiagnosticTask* voltage_checker;
+diagnostic_updater::FunctionDiagnosticTask* current_checker;
 
 float alpha = 0;
 float x = 0;
@@ -136,6 +137,7 @@ float remaining_optime = 0.0;
 float motor_driver_temperature = 0.0;
 char dock_received = 0;
 
+bool motor_overcurrent = false;
 
 void publish_odometry_and_tf();
 void publish_misc_data();
@@ -148,14 +150,16 @@ void sigint_handler(int sig)
 }
 
 double voltage_avg = 0;
-const double VOLTAGE_AVG_ELEMENTS = 500;
-const double REMAINING_V_TO_MIN_FACTOR = (4 * 60); 	// 4 hours, in minutes, with a full charge (1)
-const double MAX_VOLTAGE = 26;
-const double MIN_VOLTAGE = 22;
+const double VOLTAGE_AVG_ELEMENTS = 300;
+const double REMAINING_V_TO_MIN_FACTOR = (3 * 30); 	// 1.5 hours, in minutes, with a full charge (1)
+const double MAX_VOLTAGE = 25.5;
+const double MIN_VOLTAGE = 21;
 const int LOW_VOLTAGE_COUNT_THRESHOLD = 40; 		// we receive voltage with ~40 Hz, so 40 means ~1sec
-const float LOW_VOLTAGE_THRESHOLD_NO_DRIVING = 22.0f;
-const float LOW_VOLTAGE_THRESHOLD_WHILE_DRIVING = 20.0f;
+const float LOW_VOLTAGE_THRESHOLD_NO_DRIVING = 21.0f;
+const float LOW_VOLTAGE_THRESHOLD_WHILE_DRIVING = 19.5f;
 int low_voltage_count = 0;
+
+bool driving = false;
 
 bool shutting_down = false;
 
@@ -171,10 +175,11 @@ void prepare_shutdown()
 
 double calc_remaining_optime(float voltage)
 {
-	double ret = 0;
-	
-	if (tb != 0)
-	{
+    double ret = 0;
+    
+    // only update voltage if we're not driving
+    if (tb != 0 && driving == false)
+    {
 		// update moving average
 		if (voltage_avg == 0 && voltage != 0) 	// we just started up
 		{
@@ -186,17 +191,17 @@ double calc_remaining_optime(float voltage)
 			voltage_avg -= (voltage_avg / VOLTAGE_AVG_ELEMENTS);
 			voltage_avg += (voltage / VOLTAGE_AVG_ELEMENTS);
 		}
-		
-		// calculate remaining time based on avg
-		// min voltage is 22, max is 27
-		double remaining_v = voltage_avg - MIN_VOLTAGE;
-		if (remaining_v < 0) remaining_v = 0;
-		if (remaining_v > (MAX_VOLTAGE - MIN_VOLTAGE) + 1) remaining_v = (MAX_VOLTAGE - MIN_VOLTAGE) + 1; 	 	// now we're in [0..(MAX_VOLTAGE - MIN_VOLTAGE) + 1]
-		remaining_v /= (MAX_VOLTAGE - MIN_VOLTAGE); 	// map to [0..1.1]
-		ret = remaining_v * REMAINING_V_TO_MIN_FACTOR;
-	}
-	
-	return ret;
+    }
+    
+    // calculate remaining time based on avg
+    // min voltage is 22, max is 27
+    double remaining_v = voltage_avg - MIN_VOLTAGE;
+    if (remaining_v < 0) remaining_v = 0;
+    if (remaining_v > (MAX_VOLTAGE - MIN_VOLTAGE) + 1) remaining_v = (MAX_VOLTAGE - MIN_VOLTAGE) + 1; 	 	// now we're in [0..(MAX_VOLTAGE - MIN_VOLTAGE) + 1]
+    remaining_v /= (MAX_VOLTAGE - MIN_VOLTAGE); 	// map to [0..1.1]
+    ret = remaining_v * REMAINING_V_TO_MIN_FACTOR;
+
+    return ret;
 }
 
 void check_temperature(diagnostic_updater::DiagnosticStatusWrapper &stat)
@@ -213,6 +218,19 @@ void check_temperature(diagnostic_updater::DiagnosticStatusWrapper &stat)
    stat.add("Motor-driver temperature", motor_driver_temperature);
 }
 
+void check_current(diagnostic_updater::DiagnosticStatusWrapper &stat)
+{
+    if (motor_overcurrent)
+    {
+	stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Base motor overcurrent!");
+    }
+    else
+    {
+	stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Base motor current OK");
+    }
+    stat.add("Base motor current ok", !motor_overcurrent);
+}
+
 void check_voltage(diagnostic_updater::DiagnosticStatusWrapper &stat)
 {
 	if (tb != 0)
@@ -225,30 +243,31 @@ void check_voltage(diagnostic_updater::DiagnosticStatusWrapper &stat)
 	    
 	    if (supply_voltage > 10)
 	    {
-		if (supply_voltage < 22)
-			stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Below 22.0V");
-		else if (supply_voltage < 23)
-			stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Below 23.0V");
-		else
-			stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Above 23.0V");
+			if (supply_voltage < 22)
+				stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Below 22.0V");
+			else if (supply_voltage < 23)
+				stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Below 23.0V");
+			else
+				stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Above 23.0V");
 			
-		stat.add("Supply voltage", voltage_avg);
+			stat.add("Supply voltage", voltage_avg);
 
-		if (supply_voltage < threshold)
-		{
-			++low_voltage_count;
-			if (low_voltage_count > LOW_VOLTAGE_COUNT_THRESHOLD)
+			if (supply_voltage < threshold)
 			{
-				prepare_shutdown();
+				++low_voltage_count;
+				if (low_voltage_count > LOW_VOLTAGE_COUNT_THRESHOLD)
+				{
+					prepare_shutdown();
+				}
 			}
-		}
-		else if (low_voltage_count > 0)
-		{
-			--low_voltage_count;
-		}
+			else if (low_voltage_count > 0)
+			{
+				--low_voltage_count;
+			}
 	    }	
 	}
 }
+
 
 void On_frame_received()
 {
@@ -381,7 +400,7 @@ void publish_odometry_and_tf()
 	}	
   */
   
-        alpha = alpha + dAlpha;
+    alpha = alpha + dAlpha;
 	float dx = drive_vector.linear.x * cos(alpha);
 	float dy = drive_vector.linear.x * sin(alpha);
 
@@ -463,14 +482,17 @@ void publish_odometry_and_tf()
 	}
 }
 
+
 void twist_cmd_callback(const geometry_msgs::Twist::ConstPtr& msg)
 {
-	//ROS_INFO("received twist");
-	if (tb != 0)
-	{
-	//	ROS_INFO("sending twist");
+    //ROS_INFO("received twist");
+    if (tb != 0)
+    {
+		//	ROS_INFO("sending twist");
 		tb->Set_drive_command(make_tuple(msg->linear.x, msg->angular.z));
-	}
+    }
+    if (msg->linear.x != 0 || msg->angular.z != 0) driving = true;
+    else driving = false;
 }
 
 void jointstate_cmd_callback(const sensor_msgs::JointState::ConstPtr& msg)
@@ -535,78 +557,78 @@ void enable_control_callback(const std_msgs::Bool::ConstPtr& msg)
 
 void get_parameters()
 {
-	ros::NodeHandle local_nh = NodeHandle(ros::this_node::getName());
-	
-	local_nh.param<bool>("publish_tf", publish_tf, false);
-	local_nh.param<double>("wheel_diameter", wheel_diameter, DEFAULT_WHEEL_DIAMETER);
-	local_nh.param<double>("track_width", track_width, DEFAULT_TRACK_WIDTH);
-	local_nh.param<double>("gear_ratio", gear_ratio, DEFAULT_GEAR_RATIO);
-	local_nh.param<double>("turning_geometry_factor", turning_geometry_factor, DEFAULT_TURNING_GEOMETRY_FACTOR);
+    ros::NodeHandle local_nh = NodeHandle(ros::this_node::getName());
+    
+    local_nh.param<bool>("publish_tf", publish_tf, false);
+    local_nh.param<double>("wheel_diameter", wheel_diameter, DEFAULT_WHEEL_DIAMETER);
+    local_nh.param<double>("track_width", track_width, DEFAULT_TRACK_WIDTH);
+    local_nh.param<double>("gear_ratio", gear_ratio, DEFAULT_GEAR_RATIO);
+    local_nh.param<double>("turning_geometry_factor", turning_geometry_factor, DEFAULT_TURNING_GEOMETRY_FACTOR);
   //local_nh.param<double>("odom_low_covariance", odom_low_cov, DEFAULT_ODOM_LOW_COV);
   //local_nh.param<double>("odom_high_covariance", odom_high_cov, DEFAULT_ODOM_HIGH_COV);
   //local_nh.param<double>("odom_turn_high_cov_tolerance", odom_turn_high_cov_tolerance, DEFAULT_ODOM_TURN_HIGH_COV_TOLERANCE);
-	local_nh.param<string>("tf_from_frame", tf_from_frame, "/base_link");
-	local_nh.param<string>("tf_to_frame", tf_to_frame, "/odom");
-  local_nh.param<bool>("watchdog", watchdog, true);
-  local_nh.param<bool>("control_enabled_at_startup", control_enabled, false);
-  local_nh.param<string>("base_ip", tracker_ip, "10.0.0.2");
-  local_nh.param<int>("base_port", tracker_port, 8080);
-  local_nh.param<int>("protocol_version", protocol_version, 2); 	// default protocol is 2 (since that is the current one at the time of this writing)
+    local_nh.param<string>("tf_from_frame", tf_from_frame, "/base_link");
+    local_nh.param<string>("tf_to_frame", tf_to_frame, "/odom");
+    local_nh.param<bool>("watchdog", watchdog, true);
+    local_nh.param<bool>("control_enabled_at_startup", control_enabled, false);
+    local_nh.param<string>("base_ip", tracker_ip, "10.0.0.2");
+    local_nh.param<int>("base_port", tracker_port, 8080);
+    local_nh.param<int>("protocol_version", protocol_version, 2); 	// default protocol is 2 (since that is the current one at the time of this writing)
 
 
-  //covariance_treatment
-  double tmp;
-  local_nh.param<double>("angular_vel_z_covariance_threshold_deg", tmp, 1.0);
-  angular_vel_z_covariance_threshold = tmp * (M_PI/180.0);
+    //covariance_treatment
+    double tmp;
+    local_nh.param<double>("angular_vel_z_covariance_threshold_deg", tmp, 1.0);
+    angular_vel_z_covariance_threshold = tmp * (M_PI/180.0);
 
-  local_nh.param<double>("low_speed_linear_vel_std_dev_x", tmp, 0.025);
-  low_speed_linear_vel_variance_x = tmp * tmp;
-  local_nh.param<double>("low_speed_linear_vel_std_dev_yz", tmp, 0.01);
-  low_speed_linear_vel_variance_yz = tmp * tmp;
+    local_nh.param<double>("low_speed_linear_vel_std_dev_x", tmp, 0.025);
+    low_speed_linear_vel_variance_x = tmp * tmp;
+    local_nh.param<double>("low_speed_linear_vel_std_dev_yz", tmp, 0.01);
+    low_speed_linear_vel_variance_yz = tmp * tmp;
 
-  local_nh.param<double>("high_speed_linear_vel_std_dev_x", tmp, 0.05);
-  high_speed_linear_vel_variance_x = tmp * tmp;
-  local_nh.param<double>("high_speed_linear_vel_std_dev_yz", tmp, 0.05);
-  high_speed_linear_vel_variance_yz = tmp * tmp;
+    local_nh.param<double>("high_speed_linear_vel_std_dev_x", tmp, 0.05);
+    high_speed_linear_vel_variance_x = tmp * tmp;
+    local_nh.param<double>("high_speed_linear_vel_std_dev_yz", tmp, 0.05);
+    high_speed_linear_vel_variance_yz = tmp * tmp;
 
-  local_nh.param<double>("low_speed_angular_vel_std_dev_yaw_deg", tmp, 3.0);
-  low_speed_angular_vel_variance_yaw = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
-  local_nh.param<double>("low_speed_angular_vel_std_dev_roll_pitch_deg", tmp, 5.0);
-  low_speed_angular_vel_variance_roll_pitch = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
+    local_nh.param<double>("low_speed_angular_vel_std_dev_yaw_deg", tmp, 3.0);
+    low_speed_angular_vel_variance_yaw = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
+    local_nh.param<double>("low_speed_angular_vel_std_dev_roll_pitch_deg", tmp, 5.0);
+    low_speed_angular_vel_variance_roll_pitch = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
 
-  local_nh.param<double>("high_speed_angular_vel_std_dev_yaw_deg", tmp, 120.0);
-  high_speed_angular_vel_variance_yaw = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
-  local_nh.param<double>("high_speed_angular_vel_std_dev_roll_pitch_deg", tmp, 30.0);
-  high_speed_angular_vel_variance_roll_pitch = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
+    local_nh.param<double>("high_speed_angular_vel_std_dev_yaw_deg", tmp, 120.0);
+    high_speed_angular_vel_variance_yaw = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
+    local_nh.param<double>("high_speed_angular_vel_std_dev_roll_pitch_deg", tmp, 30.0);
+    high_speed_angular_vel_variance_roll_pitch = ( (tmp * (M_PI/180.0)) * (tmp * (M_PI/180.0)) );
 
 }
 
 			
 void init()
 {
-	signal(SIGINT, sigint_handler);
-	
-	get_parameters();
-		
-	sub_twist = nh->subscribe("cmd_vel", 1, &twist_cmd_callback);
-	sub_jointstate = nh->subscribe("jointstate_cmd", 1, &jointstate_cmd_callback);
-	sub_light = nh->subscribe("light", 1, &light_callback);
-	sub_bluelight = nh->subscribe("bluelight", 1, &bluelight_callback);
-	sub_watchdog = nh->subscribe("watchdog_feed", 1, &watchdog_feed_callback);
-	sub_enabler = nh->subscribe("enable_control", 1, &enable_control_callback);
-			
-	// TODO: commented lines would be available, but still need to be published
-	//pub_twist = nh->advertise<geometry_msgs::Twist>("twist_status", 1); 		// does this make sense when we have odom?
-	pub_odom = nh->advertise<nav_msgs::Odometry>("odom", 1);
-	//pub_jointstate = nh->advertise<sensor_msgs::JointState>("jointstate_status", 1);
-	//pub_imu = nh->advertise<sensor_msgs::Imu>("imu_data", 1);
-	pub_imu_mag = nh->advertise<geometry_msgs::Vector3Stamped>("imu_magnetometer", 1);
-	pub_imu_acc = nh->advertise<geometry_msgs::Vector3Stamped>("imu_accelerometer", 1);
-	pub_imu_gyr = nh->advertise<geometry_msgs::Vector3Stamped>("imu_gyroscope", 1);
-	pub_voltage = nh->advertise<std_msgs::Float32>("supply_voltage", 1);
-	pub_temperature = nh->advertise<std_msgs::Float32>("temperatures", 1);
-	pub_error_code = nh->advertise<std_msgs::Byte>("error_code", 1);
-	pub_aux_bits = nh->advertise<std_msgs::Byte>("aux_bits", 1);
+    signal(SIGINT, sigint_handler);
+    
+    get_parameters();
+	    
+    sub_twist = nh->subscribe("cmd_vel", 1, &twist_cmd_callback);
+    sub_jointstate = nh->subscribe("jointstate_cmd", 1, &jointstate_cmd_callback);
+    sub_light = nh->subscribe("light", 1, &light_callback);
+    sub_bluelight = nh->subscribe("bluelight", 1, &bluelight_callback);
+    sub_watchdog = nh->subscribe("watchdog_feed", 1, &watchdog_feed_callback);
+    sub_enabler = nh->subscribe("enable_control", 1, &enable_control_callback);
+		    
+    // TODO: commented lines would be available, but still need to be published
+    //pub_twist = nh->advertise<geometry_msgs::Twist>("twist_status", 1); 		// does this make sense when we have odom?
+    pub_odom = nh->advertise<nav_msgs::Odometry>("odom", 1);
+    //pub_jointstate = nh->advertise<sensor_msgs::JointState>("jointstate_status", 1);
+    //pub_imu = nh->advertise<sensor_msgs::Imu>("imu_data", 1);
+    pub_imu_mag = nh->advertise<geometry_msgs::Vector3Stamped>("imu_magnetometer", 1);
+    pub_imu_acc = nh->advertise<geometry_msgs::Vector3Stamped>("imu_accelerometer", 1);
+    pub_imu_gyr = nh->advertise<geometry_msgs::Vector3Stamped>("imu_gyroscope", 1);
+    pub_voltage = nh->advertise<std_msgs::Float32>("supply_voltage", 1);
+    pub_temperature = nh->advertise<std_msgs::Float32>("temperatures", 1);
+    pub_error_code = nh->advertise<std_msgs::Byte>("error_code", 1);
+    pub_aux_bits = nh->advertise<std_msgs::Byte>("aux_bits", 1);
     pub_remaining_optime = nh->advertise<std_msgs::Float32>("remaining_optime", 1);
 	pub_docked = nh->advertise<std_msgs::Bool>("robot_docked", 1);
 	pub_current = nh->advertise<std_msgs::Float32>("total_current", 1);
@@ -614,29 +636,37 @@ void init()
     updater->setHardwareID("taurob_base");
 
     temperature_checker = new diagnostic_updater::FunctionDiagnosticTask
-							(
-								"Motor-driver temperature", 
-								boost::bind(&check_temperature, _1)
-							);
-	voltage_checker = new diagnostic_updater::FunctionDiagnosticTask
-							(
-								"Supply voltage",
-								boost::bind(&check_voltage, _1)
-							);
+			    (
+				    "Motor-driver temperature", 
+				    boost::bind(&check_temperature, _1)
+			    );
+    voltage_checker = new diagnostic_updater::FunctionDiagnosticTask
+			    (
+				    "Supply voltage",
+				    boost::bind(&check_voltage, _1)
+			    );
+    current_checker = new diagnostic_updater::FunctionDiagnosticTask
+			    (
+				    "Motors overcurrent",
+				    boost::bind(&check_current, _1)
+			    );
     updater->add(*temperature_checker);
     updater->add(*voltage_checker);
+    updater->add(*current_checker);
 
     ecu_coms_diag = new diagnostic_updater::HeaderlessTopicDiagnostic
-							(
-								"Base ECU Communication", 
-								*updater, 
-								diagnostic_updater::FrequencyStatusParam(&ecu_com_diag_min_freq, 
-																		 &ecu_com_diag_max_freq, 
-																		 0.1, 
-																		 10)
-							);
+			    (
+				"Base ECU Communication", 
+				*updater, 
+				diagnostic_updater::FrequencyStatusParam(
+				    &ecu_com_diag_min_freq, 
+				    &ecu_com_diag_max_freq, 
+				    0.1, 
+				    10)
+			    );
     ecu_coms_diag->addTask(temperature_checker);
     ecu_coms_diag->addTask(voltage_checker);
+    ecu_coms_diag->addTask(current_checker);
 
     updater->force_update();
 	ROS_INFO("Base node initialization complete");
@@ -690,8 +720,8 @@ int main(int argc, char **argv)
     diagnostic_updater::Updater base_node_updater;
     updater = &base_node_updater;
 	
-	init();
-	ROS_INFO("\ntaurob base node is running.\n");
+    init();
+    ROS_INFO("\ntaurob base node is running.\n");
 
 	tb = new Taurob_base(tracker_ip, tracker_port, protocol_version, control_enabled);
 	tb->Set_on_received_callback(&On_frame_received);
@@ -699,22 +729,22 @@ int main(int argc, char **argv)
 	tb->Set_watchdog_enabled(watchdog);
 	tb->Run();
 
-	while (ros::ok())
-	{
-		ros::spinOnce();
-		updater->update();
-		ros::Duration(0.02).sleep(); 	// 20ms
-	}
-	
-	if (ecu_coms_diag != 0) delete ecu_coms_diag;
-	if (temperature_checker != 0) delete temperature_checker;
-	if (voltage_checker != 0) delete voltage_checker;
-	
-	tb->Stop();
-	delete tb;
-	tb = 0;
-	
-	ROS_INFO("Terminating.");	
-	exit(0);
+    while (ros::ok())
+    {
+	    ros::spinOnce();
+	    updater->update();
+	    ros::Duration(0.02).sleep(); 	// 20ms
+    }
+    
+    if (ecu_coms_diag != 0) delete ecu_coms_diag;
+    if (temperature_checker != 0) delete temperature_checker;
+    if (voltage_checker != 0) delete voltage_checker;
+    
+    tb->Stop();
+    delete tb;
+    tb = 0;
+    
+    ROS_INFO("Terminating.");	
+    exit(0);
 }
 

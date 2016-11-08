@@ -34,7 +34,9 @@ typedef boost::posix_time::time_duration tTimeDuration;
 using namespace std;
 
 static const int WATCHDOG_MAX_TIME = 150;	// ms
-static const int MAX_SEC_AFTER_COMS_LOSS = 10;  // sec
+
+int supply_watchdog_after_coms_loss_secs;
+int watchdog_detect_after_coms_loss_secs;
 
 ros::Publisher pub_feed;
 ros::Publisher pub_coms_lost;
@@ -147,6 +149,7 @@ void emergency_stop_callback(const std_msgs::BoolConstPtr& msg)
 	emergency_stop = msg->data;
 }
 
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "taurob_watchdog");
@@ -155,6 +158,8 @@ int main(int argc, char** argv)
 	
 	int listen_port = 19090;
 	local_nh.param<int>("listen_port", listen_port, 19090);
+	local_nh.param<int>("supply_watchdog_after_coms_loss_secs", supply_watchdog_after_coms_loss_secs, 60);
+	local_nh.param<int>("watchdog_detect_after_coms_loss_tolerance_secs", watchdog_detect_after_coms_loss_secs, 30);
 	
 	pub_feed = nh.advertise<std_msgs::Bool>("watchdog_feed", 1);
 	pub_coms_lost = nh.advertise<std_msgs::Bool>("/communication_lost", 1);
@@ -189,16 +194,21 @@ int main(int argc, char** argv)
 			}
 		}
 
-		// if communication was lost, send watchdog for MAX_SEC_AFTER_COMS_LOSS seconds to allow for autonomous reaction
-		if (coms_loss && secs_since_com_loss() < MAX_SEC_AFTER_COMS_LOSS && 
+		// if communication was lost, send watchdog for supply_watchdog_after_coms_loss_secs seconds to allow for autonomous reaction
+		// ..but only if we received a watchdog within watchdog_detect_after_coms_loss_secs seconds prior to COMS loss
+		if (coms_loss && 
+		    (secs_since_com_loss() < (supply_watchdog_after_coms_loss_secs + watchdog_detect_after_coms_loss_secs)) && 
 			!emergency_stop)
 		{
 			// ..but only if we received a watchdog within 12 seconds prior to COMS loss
 			if (supply_coms_loss_watchdog == false)
 			{
+				// decide if watchdog is gone so long that we don't think it was active before COMS loss
 				tTimeDuration dt = boost::posix_time::microsec_clock::local_time() - latest_watchdog_time;
-				if (dt.total_milliseconds() <= 12000) 
+
+				if (dt.total_milliseconds() <= watchdog_detect_after_coms_loss_secs * 1000) 
 				{
+					// we do think it was active, so supply system with watchdog for watchdog_detect_after_coms_loss_secs
 					supply_coms_loss_watchdog = true;
 				}
 			}
