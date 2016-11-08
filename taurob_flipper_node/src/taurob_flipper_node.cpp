@@ -42,7 +42,7 @@ using namespace ros;
 using namespace std;
 
 NodeHandle* nh;
-Subscriber sub_duty, sub_watchdog, sub_enabler;
+Subscriber sub_angle, sub_watchdog, sub_enabler;
 Publisher pub_jointstate;
 
 Flipper* flipper = 0;
@@ -61,11 +61,11 @@ void sigint_handler(int sig)
     ros::shutdown();
 }
 
-void set_duty_callback(const std_msgs::Float64::ConstPtr& msg)
+void set_angle_callback(const std_msgs::Float64::ConstPtr& msg)
 {
 	if (flipper != 0)
 	{
-		flipper->Set_duty(msg->data);
+		flipper->Set_position(0, msg->data);
 	}
 }
 
@@ -118,7 +118,7 @@ void init()
 		ROS_ERROR("No configuration found -- won't be doing anything.");
 	}
 	
-	sub_duty = nh->subscribe("set_flipper_duty", 1, &set_duty_callback);
+	sub_angle = nh->subscribe("set_flipper_angle", 1, &set_angle_callback);
 	sub_watchdog = nh->subscribe("watchdog_feed", 1, &watchdog_feed_callback);
 	sub_enabler = nh->subscribe("enable_control", 1, &enable_control_callback);
 	pub_jointstate = nh->advertise<sensor_msgs::JointState>("jointstate_status", 1);
@@ -126,15 +126,15 @@ void init()
 	ROS_INFO("Initialization complete");
 }
 
-void On_flipper_receive()
+void On_flipper_receive(int segment_nr)
 {
-	ROS_DEBUG("Flipper received; pos is %f", flipper->Get_position());
+	ROS_DEBUG("Flipper received; pos is %f", flipper->Get_position(0));
 	
 	sensor_msgs::JointState js;
 	js.name.push_back("flipper_position");
 	js.header.stamp = ros::Time::now();
 	
-	double pos = (flipper->Get_position() + pos_offset);
+	double pos = (flipper->Get_position(0) + pos_offset);
 	while (pos > M_PI) pos -= 2*M_PI;
 	while (pos < -M_PI) pos += 2*M_PI;
 	js.position.push_back(pos);
@@ -153,7 +153,13 @@ int main(int argc, char **argv)
 	init();
 	ROS_INFO("\ntaurob Flipper Node is running.\n");
 	
-	flipper = new Flipper(ip_address, port, control_enabled);
+	Flipper_config config;
+	config.joint_names.push_back("flipper_front");
+	config.joint_ips.push_back(ip_address);
+	config.joint_ports.push_back(port);
+	config.joint_channels.push_back(0);
+	
+	flipper = new Flipper(config, control_enabled);
 	flipper->Set_on_received_callback(&On_flipper_receive);
 	flipper->Set_watchdog_enabled(watchdog);
 	flipper->Run();
