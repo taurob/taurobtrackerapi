@@ -1,13 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(libtaurob_arm)
+project(taurob_flipper_ros_control)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS libtaurob_tools)
+find_package(catkin REQUIRED COMPONENTS
+  hardware_interface
+  controller_manager
+  roscpp
+  libtaurob_tools
+  libtaurob_arm
+  std_msgs
+  diagnostic_updater
+)
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
+# find_package(Boost REQUIRED COMPONENTS system)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -75,9 +84,9 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-   INCLUDE_DIRS include
-   LIBRARIES taurob_arm
-   CATKIN_DEPENDS libtaurob_tools
+#  INCLUDE_DIRS include
+#  LIBRARIES taurob_manipulator_controller
+#  CATKIN_DEPENDS hardware_interface roscpp
 #  DEPENDS system_lib
 )
 
@@ -87,28 +96,26 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+# include_directories(include)
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-add_library(taurob_arm
-   src/Arm_segment.cpp src/Arm.cpp src/Flipper.cpp src/Arm_frames.cpp
-)
+# add_library(taurob_manipulator_controller
+#   src/${PROJECT_NAME}/taurob_manipulator_controller.cpp
+# )
 
 ## Declare a cpp executable
-# add_executable(libtaurob_manipulator_node src/libtaurob_manipulator_node.cpp)
+add_executable(flipper_hw_interface src/flipper_hw_interface.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(taurob_arm libtaurob_tools)
+# add_dependencies(taurob_manipulator_controller_node taurob_manipulator_controller_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(taurob_arm
-   boost_thread
-   boost_system
-   boost_date_time
+target_link_libraries(flipper_hw_interface
    ${catkin_LIBRARIES}
 )
 
@@ -127,7 +134,7 @@ target_link_libraries(taurob_arm
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS libtaurob_manipulator libtaurob_manipulator_node
+# install(TARGETS taurob_manipulator_controller taurob_manipulator_controller_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -152,7 +159,7 @@ target_link_libraries(taurob_arm
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_libtaurob_manipulator.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_taurob_manipulator_controller.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

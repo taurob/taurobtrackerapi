@@ -40,10 +40,12 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>libtaurob_flipper</build_depend>
+  <build_depend>libtaurob_tools</build_depend>
+  <build_depend>libtaurob_arm</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
-  <run_depend>libtaurob_flipper</run_depend>
+  <build_depend>libtaurob_tools</build_depend>
+  <build_depend>libtaurob_arm</build_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>sensor_msgs</run_depend>
 

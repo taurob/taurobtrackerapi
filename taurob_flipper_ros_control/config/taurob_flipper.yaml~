@@ -1,0 +1,23 @@
+argonaut_robot/flipper:    
+  # Position Controllers ---------------------------------------  
+  flipper_traj_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - front_flipper_joint
+
+# pos constraints intentionally set high
+    constraints:
+        goal_time: 10.0
+        stopped_velocity_tolerance: 1.0
+        front_flipper_joint:
+          goal: &goal_pos_constraint 1.5
+          trajectory: &trajectory_pos_constraint 3.0
+        rear_flipper_joint:
+          goal: *goal_pos_constraint
+          trajectory: *trajectory_pos_constraint
+
+
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50 

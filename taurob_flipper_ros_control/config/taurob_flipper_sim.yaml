@@ -1,0 +1,11 @@
+argonaut_robot/flipper:    
+  # Position Controllers ---------------------------------------  
+  flipper_traj_controller:
+    type: "position_controllers/JointTrajectoryController"
+    joints:
+      - flipper_front
+
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50 

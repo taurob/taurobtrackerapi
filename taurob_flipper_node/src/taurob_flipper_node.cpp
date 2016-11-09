@@ -36,7 +36,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <XmlRpcValue.h>
 
-#include <libtaurob_flipper/libtaurob_flipper.h>
+#include <libtaurob_arm/libtaurob_arm.h>
 
 using namespace ros;
 using namespace std;
@@ -55,7 +55,6 @@ double pos_offset;
 std::string ip_address;
 int port;
 
-
 void sigint_handler(int sig)
 {
     ros::shutdown();
@@ -65,7 +64,7 @@ void set_angle_callback(const std_msgs::Float64::ConstPtr& msg)
 {
 	if (flipper != 0)
 	{
-		flipper->Set_position(0, msg->data);
+		flipper->Set_position(msg->data);
 	}
 }
 
@@ -95,7 +94,7 @@ void init()
 	
 	ros::NodeHandle local_nh = NodeHandle(ros::this_node::getName());
 	
-	// get parameters -- try to, at least
+	// get parameters
 	try
 	{
 		local_nh.param<bool>("watchdog", watchdog, true);
@@ -128,13 +127,13 @@ void init()
 
 void On_flipper_receive(int segment_nr)
 {
-	ROS_DEBUG("Flipper received; pos is %f", flipper->Get_position(0));
+	ROS_DEBUG("Flipper received; pos is %f", flipper->Get_position());
 	
 	sensor_msgs::JointState js;
 	js.name.push_back("flipper_position");
 	js.header.stamp = ros::Time::now();
 	
-	double pos = (flipper->Get_position(0) + pos_offset);
+	double pos = (flipper->Get_position() + pos_offset);
 	while (pos > M_PI) pos -= 2*M_PI;
 	while (pos < -M_PI) pos += 2*M_PI;
 	js.position.push_back(pos);
@@ -153,13 +152,7 @@ int main(int argc, char **argv)
 	init();
 	ROS_INFO("\ntaurob Flipper Node is running.\n");
 	
-	Flipper_config config;
-	config.joint_names.push_back("flipper_front");
-	config.joint_ips.push_back(ip_address);
-	config.joint_ports.push_back(port);
-	config.joint_channels.push_back(0);
-	
-	flipper = new Flipper(config, control_enabled);
+	flipper = new Flipper(ip_address, port, control_enabled);
 	flipper->Set_on_received_callback(&On_flipper_receive);
 	flipper->Set_watchdog_enabled(watchdog);
 	flipper->Run();
@@ -167,7 +160,7 @@ int main(int argc, char **argv)
 	ros::spin();
 	
 	flipper->Stop();
-	delete(flipper);
+	delete flipper;
 	
 	ROS_INFO("Terminating.");	
 	return 0;

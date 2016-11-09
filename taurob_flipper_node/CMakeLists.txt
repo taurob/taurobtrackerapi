@@ -5,7 +5,8 @@ project(taurob_flipper_node)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  libtaurob_flipper
+  libtaurob_tools
+  libtaurob_arm
   roscpp
   sensor_msgs
   std_msgs

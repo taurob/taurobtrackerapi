@@ -245,7 +245,8 @@ void Arm_segment::Sending_thread()
 				current_set_values_locker.lock();
 				current_tx_seqno = (current_tx_seqno + 1) % 255;
 				current_set_values.sequence_number = current_tx_seqno;
-DEBUG("[Arm seg. #%d (%d)] Motor enable: %d\n", segment_nr, host_port, current_set_values.bitfield);
+				
+				//DEBUG("[Arm seg. #%d (%d)] Motor enable: %d\n", segment_nr, host_port, current_set_values.bitfield);
 				Arm_frames::Command_to_bytes(current_set_values, sendbuffer);
 				current_set_values_locker.unlock();
 
@@ -461,10 +462,10 @@ void Arm_segment::Set_position(float pos)
 	if (!pause_sending && !receive_pause && pos==pos) 	// the pos==pos expression is a NaN check
 	{
 		bool changed = false;
-		//DEBUG("[Arm seg. #%d] (%d) received arm set pos to %f\n", segment_nr, host_port, pos);	
+		DEBUG("[Arm seg. #%d] (%d) received arm set pos to %f\n", segment_nr, host_port, pos);	
 		pos *= (180.0f/M_PI);  	// convert from rad to deg
 		uint16_t new_set_pos = (uint16_t)((fmod((360.0 + pos), 360.0)) * ((double)max_input_value / 360.0));
-		//DEBUG("[Arm seg. #%d]  this translates to %d\n", segment_nr, new_set_pos);
+		DEBUG("[Arm seg. #%d]  this translates to %d\n", segment_nr, new_set_pos);
 
 		current_set_values_locker.lock();
 		

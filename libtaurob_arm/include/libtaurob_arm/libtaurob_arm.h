@@ -69,26 +69,6 @@ class IReceiveCallbackRelay
 };
 
 
-// used for arm and flippers
-class IAbstract_taurob_segment
-{
-	public:
-		virtual void Run() = 0;
-		virtual void Stop() = 0;		   
-		virtual void Feed_watchdog() = 0;
-		virtual void Set_on_received_callback(void (*callback)(int segment_nr)) = 0;
-		virtual void Set_watchdog_enabled(bool state) = 0;
-		virtual void Set_pause_sending(bool pause) = 0;		
-		virtual bool Is_uptodate() = 0;
-		virtual bool Watchdog_ok() = 0;		
-		virtual int Get_segment_count() = 0;
-		virtual std::string Get_segment_name(int segment) = 0;
-		virtual float Get_position(int segment) = 0;
-		virtual float Get_current(int segment) = 0;
-		virtual float Get_temperature(int segment) = 0;
-		virtual void Set_position(int segment, float pos) = 0;
-};
-
 class Arm_segment : IUdpReceiverBinary
 {
 	public:
@@ -191,7 +171,7 @@ class Arm_segment : IUdpReceiverBinary
 		int current_tx_seqno;
 };
 
-class Arm : IReceiveCallbackRelay, IAbstract_taurob_segment
+class Arm : IReceiveCallbackRelay
 {
 	public:	
 		Arm(Arm_config configuration, bool control_enabled_initially);
@@ -225,6 +205,10 @@ class Arm : IReceiveCallbackRelay, IAbstract_taurob_segment
 	
 		void Set_on_friction_clutch_slipped_callback(void (*callback)(int segment_nr));
 		void Reset_friction_clutch(); 	// resets friction clutch for entire arm, because we don't want just one segment stopping
+		
+	protected:
+		void (*on_receive_callback)(int segment_nr);
+		void (*on_friction_clutch_slipped_callback)(int segment_nr);
 			
 	private:
 		static const int MIN_UPTODATE_WARNING_INTERVAL = 3000; // milliseconds
@@ -233,8 +217,26 @@ class Arm : IReceiveCallbackRelay, IAbstract_taurob_segment
 
 		bool config_successful;
 		std::vector<Arm_segment*> segments;
-		void (*on_receive_callback)(int segment_nr);
-		void (*on_friction_clutch_slipped_callback)(int segment_nr);
+};
+
+
+class Flipper : public Arm
+{
+	public:
+		Flipper(std::string ip_address, int port, bool control_enabled_initially);
+		std::string Get_segment_name();
+		float Get_position();
+		float Get_current();
+		float Get_temperature();
+		void Set_position(float pos);
+		unsigned char Get_error_code();
+		unsigned char Get_bitfield();
+		void Force_motor_enable_once();
+		
+	private:
+		static Arm_config Build_arm_config(std::string ip_address, int port);
+		void On_segment_receive(int segment_nr);
+		float backup_flipper_pos;
 };
 
 #endif
