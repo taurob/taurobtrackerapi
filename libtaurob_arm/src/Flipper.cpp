@@ -48,6 +48,7 @@ Arm_config Flipper::Build_arm_config(std::string ip_address, int port)
 
 void Flipper::On_segment_receive(int segment_nr)
 {
+	Arm::On_segment_receive(segment_nr);
 	FILE* backup_flipper_file = fopen("flipper_pos.txt", "w+");
 	if (backup_flipper_file != 0)
 	{
@@ -101,7 +102,7 @@ unsigned char Flipper::Get_bitfield()
 
 void Flipper::Set_position(float pos)
 {
-	printf("Received set position: %f, backup pos: %f\n", pos, backup_flipper_pos);
+	//printf("Received set position: %f, backup pos: %f\n", pos, backup_flipper_pos);
 	float setpos = pos - backup_flipper_pos;
 	
 	// Arm::Set_position expects [0..2pi], make sure that's expected
@@ -109,6 +110,6 @@ void Flipper::Set_position(float pos)
 	{
 		setpos += 2.0f * M_PI;
 	}
-	printf("setting: %f\n", setpos);
+	//printf("setting: %f\n", setpos);
 	Arm::Set_position(0, setpos);
 }

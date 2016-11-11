@@ -5,7 +5,7 @@ argonaut_robot/flipper:
     joints:
       - flipper_front
 
-# pos constraints intentionally set high
+    # pos constraints intentionally set high
     constraints:
         goal_time: 10.0
         stopped_velocity_tolerance: 1.0

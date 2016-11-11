@@ -361,7 +361,8 @@ void Arm_segment::On_data_received(unsigned char* data, int len, char* from_remo
 		current_get_values_locker.lock();
 		uint16_t old_position = current_get_values.position;
 		current_get_values_locker.unlock();
-		//printf("[arm seg. #%d (%d)] Got fresh values, updating latest_rx_frame_time\n", segment_nr, host_port);
+		
+		DEBUG("[arm seg. #%d (%d)] Got fresh values, updating latest_rx_frame_time\n", segment_nr, host_port);
 		latest_rx_frame_time = boost::posix_time::microsec_clock::local_time();
 		
 		// store decode result in an intermediate status frame, so decode errors won't
@@ -381,7 +382,7 @@ void Arm_segment::On_data_received(unsigned char* data, int len, char* from_remo
 			current_get_values.bitfield = received_values.bitfield;
 			current_get_values.error_code = received_values.error_code;
 
-			//DEBUG("## Segment %d (%d) received %d\n", segment_nr, host_port, current_get_values.position);
+			DEBUG("## Segment %d (%d) received %d\n", segment_nr, host_port, current_get_values.position);
 		
 			uint16_t dposition = current_get_values.position - old_position;
 			
@@ -398,7 +399,8 @@ void Arm_segment::On_data_received(unsigned char* data, int len, char* from_remo
 				first_frame_received = true;
 				current_set_values_locker.lock();
 				current_get_values_locker.lock();
-				DEBUG("Received first frame with position %d\n", current_get_values.position);
+				
+				printf("Received first frame with position %d\n", current_get_values.position);
 				current_set_values.set_position = current_get_values.position;
 				current_get_values_locker.unlock();
 				current_set_values_locker.unlock();
