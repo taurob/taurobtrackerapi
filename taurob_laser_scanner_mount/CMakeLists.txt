@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(taurob_claw_node)
+project(taurob_laser_scanner_mount)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  libtaurob_claw
+  message_generation
   roscpp
-  sensor_msgs
   std_msgs
-  hardware_interface
-  controller_manager
+  libtaurob_tools
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,9 +46,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
+# FILES
 # )
 
 ## Generate services in the 'srv' folder
@@ -68,10 +64,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
+#generate_messages(
 #   DEPENDENCIES
-#   sensor_msgs
-# )
+#   std_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -84,8 +80,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES taurob_manipulator_node
-#  CATKIN_DEPENDS libtaurob_manipulator roscpp sensor_msgs
+#  LIBRARIES taurob_laser_scanner_mount
+#  CATKIN_DEPENDS message_generation roscpp std_msgs taurob_utils
 #  DEPENDS system_lib
 )
 
@@ -102,20 +98,23 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(taurob_manipulator_node
-#   src/${PROJECT_NAME}/taurob_manipulator_node.cpp
+# add_library(taurob_laser_scanner_mount
+#   src/${PROJECT_NAME}/taurob_laser_scanner_mount.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(taurob_claw_node src/taurob_claw_node.cpp include/taurob_claw_node/taurob_claw_node.hpp)
+add_executable(laser_scanner_mount 
+ src/laser_scanner_mount.cpp 
+ src/LSMStatusMsgConverter.cpp 
+)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(taurob_manipulator_node_node taurob_manipulator_node_generate_messages_cpp)
+#add_dependencies(laser_scanner_mount taurob_laser_scanner_mount_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(taurob_claw_node
-   ${catkin_LIBRARIES}
+target_link_libraries(laser_scanner_mount
+  ${catkin_LIBRARIES}
 )
 
 #############
@@ -133,7 +132,7 @@ target_link_libraries(taurob_claw_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS taurob_manipulator_node taurob_manipulator_node_node
+# install(TARGETS taurob_laser_scanner_mount taurob_laser_scanner_mount_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -158,7 +157,7 @@ target_link_libraries(taurob_claw_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_taurob_manipulator_node.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_taurob_laser_scanner_mount.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

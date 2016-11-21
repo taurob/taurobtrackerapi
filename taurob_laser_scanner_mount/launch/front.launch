@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<node pkg="taurob_laser_scanner_mount" type="laser_scanner_mount" name="laser_scanner_mount_front" output="screen" respawn="true">
+		<param name="listen_port" value="8061" />
+		<param name="host_ip" value="172.16.20.105" />
+		<param name="host_port" value="8064" />
+		<param name="speed_cmd_topic" value="/front_spinning_lidar/rotation_speed" />
+		<param name="embedded_epoch_error_us" value="00" />
+		<param name="joint_state_topic" value="/joint_states" />
+		<param name="laser_joint_name" value="front_spinning_lidar_spin_joint" />
+		<param name="angular_offset" value="4.12" />
+		<param name="velocity_offset" value="0" />
+	</node>
+	
+	<node name="urg_node_front" pkg="urg_node" type="urg_node" output="screen" ns="front_spinning_lidar" respawn="true">
+		<param name="ip_address" value="172.16.20.112" />
+		<param name="ip_port" value="10940" />
+		<param name="cluster" value="1" />
+		<param name="skip" value="0" />
+		<param name="publish_intensity" value="true" />
+                <param name="calibrate_time" value="true" />                 
+		<param name="publish_multiecho" value="true" />
+		<param name="frame_id" value="front_hokuyo_laser_frame" />
+		<param name="diagnostics_tolerance" value="0.75"/>
+	</node>
+</launch>

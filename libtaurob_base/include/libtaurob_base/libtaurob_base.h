@@ -115,6 +115,7 @@ class Taurob_base : public IUdpReceiver
 
 		bool motor_fault;
 		double avg_total_motor_current;
+		tTime motor_fault_time;
 		uint backup_gripper_pos;
 	
 		std::string ECU_host_ip;

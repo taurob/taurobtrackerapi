@@ -138,6 +138,14 @@ void Taurob_base::Sending_thread()
 					first_frame_sent = true;
 				}
 			}
+			else
+			{
+				tTimeDuration dt = boost::posix_time::microsec_clock::local_time() - motor_fault_time;
+				if(dt.total_milliseconds() > 5000){
+					printf("[Base ECU] OVERCURRENT RESET\n");
+					motor_fault = false;
+				}
+			}
 
 			current_set_values_locker.unlock();
 			
@@ -368,7 +376,9 @@ void Taurob_base::Check_for_errors()
 	double current = avg_total_motor_current / CURRENT_AVERAGE_ELEMENTS;
 	if (current > MAX_TOTAL_MOTOR_CURRENT)
 	{
+		printf("[Base ECU] OVERCURRENT ON\n");
 		motor_fault = true;
+		motor_fault_time = boost::posix_time::microsec_clock::local_time();
 		if (on_error_callback != 0)
 		{
 			on_error_callback(0x40);

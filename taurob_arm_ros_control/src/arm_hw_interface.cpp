@@ -596,7 +596,7 @@ void Arm_hw_interface::read()
 		}
 		else 	// valid position
 		{
-			if (i == 0) getpos = -getpos;
+			if (i == 0) getpos = -getpos; 	// invert joint0 turning direction - for default tracker arm
 
 			// map in range [-pi..+pi]
 			while (getpos > M_PI) getpos -= 2*M_PI;
@@ -648,7 +648,8 @@ void Arm_hw_interface::write()
 			{
 				//ROS_INFO("setting manipulator joint %d to position %f", i, cmds[i]);
 				double setpos = cmds[i] - offsets[i];
-				if (i == 0) setpos = -cmds[i] - offsets[i];
+				
+				if (i == 0) setpos = -cmds[i] - offsets[i]; 	// invert joint0 turning direction - for default tracker arm
 				
 				// make sure value is in [0..2pi]
 				while (setpos < 0) setpos += 2*M_PI;

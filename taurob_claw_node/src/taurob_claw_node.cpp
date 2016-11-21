@@ -1,25 +1,8 @@
-/**************************************************************************//**
- *
- * @file taurob_claw_node.cpp
- * @author Martin Schenk, taurob GmbH
- * @date 30 May 2016
- * @brief Node to integrate taurob gripper functionality with ROS
- *
- *
- *  Copyright (c) 2016 taurob GmbH. All rights reserved.
- *  Perfektastrasse 57/7, 1230 Wien, Austria. office@taurob.com
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- * 
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
- * 
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
- ******************************************************************************/
+#include "taurob_claw_node/taurob_claw_node.hpp"
+
+#include <controller_manager/controller_manager.h>
+
+#include <ros/param.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,182 +10,221 @@
 #include <string>
 #include <sstream>
 
-#include <ros/ros.h>
-#include <ros/param.h>
-#include <sensor_msgs/JointState.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Float64.h>
+
+
 
 #include <boost/tuple/tuple.hpp>
 #include <XmlRpcValue.h>
 
-#include <libtaurob_claw/libtaurob_claw.h>
-
 using namespace ros;
 using namespace std;
 
-NodeHandle* nh;
-Subscriber sub_jointstate, sub_watchdog, sub_enabler;
-Publisher pub_jointstate, pub_force;
+const string JOINT_ROTAION = "arm_joint_4";
+const string JOINT_GRIP = "gripper_joint_0";
 
-Claw* claw = 0;
 
-bool publish_tf;
-bool watchdog;
-bool control_enabled;
+namespace taurob_claw_node
+{
 
-double rot_offset;
-double grip_offset;
+  TaurobClawNode::TaurobClawNode(ros::NodeHandle &nh, boost::shared_ptr<Claw> &claw) : nh_(nh), claw(claw)
+  {
+    ROS_INFO("TaurobClawNode()");
+  }
+
+  void TaurobClawNode::watchdog_feed_callback(const std_msgs::Bool::ConstPtr& msg)
+  {
+    if (msg->data == true)
+    {
+      claw->Feed_watchdog();
+    }
+  }
+
+  void TaurobClawNode::enable_control_callback(const std_msgs::Bool::ConstPtr& msg)
+  {
+    ROS_INFO("setting control to %s", (msg->data ? (char*)"true" : (char*)"false"));
+    claw->Set_pause_sending(!(msg->data)); 	// if control enabled, pause=false. if control disabled, pause=true.
+  }
+
+
+  void TaurobClawNode::init()
+  {
+    ROS_INFO("reading parameters...");
+
+    // get parameters -- try to, at least
+    try
+    {
+      nh_.param<bool>("watchdog", watchdog, true);
+      ROS_INFO("Safeguard (Watchdog or Command RX Timeout): %s", (char*)(watchdog ? "Watchdog" : "Command RX Timeout"));
+      nh_.param<double>("rot_factor", rot_factor, 1.0);
+      nh_.param<double>("rot_offset", rot_offset, 0.0);
+      nh_.param<double>("grip_factor", grip_factor, 1.0);
+      nh_.param<double>("grip_offset", grip_offset, 0.0);
+      ROS_INFO("Factor: rot: %f, grip: %f", rot_factor, grip_factor);
+      ROS_INFO("Offsets: rot: %f, grip: %f", rot_offset, grip_offset);
+    }
+    catch(...)
+    {
+      ROS_ERROR("No configuration found -- won't be doing anything.");
+    }
+
+    //sub_jointstate = nh_->subscribe("jointstate_cmd", 1, &jointstate_cmd_callback);
+    sub_watchdog = nh_.subscribe("watchdog_feed", 1, &TaurobClawNode::watchdog_feed_callback, this);
+    sub_enabler = nh_.subscribe("enable_control", 1, &TaurobClawNode::enable_control_callback, this);
+    //pub_jointstate = nh_->advertise<sensor_msgs::JointState>("jointstate_status", 1);
+    //pub_force = nh_.advertise<std_msgs::Float64>("claw_force", 1);
+
+    hardware_interface::JointStateHandle state_handle_rot(JOINT_ROTAION, &joint_position_rotation, &joint_velocity_rotation, &joint_effort_rotation);
+    joint_state_interface_.registerHandle(state_handle_rot);
+
+    hardware_interface::JointHandle pos_handle_rot(joint_state_interface_.getHandle(JOINT_ROTAION), &joint_pos_cmd_rotation);
+    position_joint_interface_.registerHandle(pos_handle_rot);
+
+    hardware_interface::JointStateHandle state_handle_grip(JOINT_GRIP, &joint_position_grip, &joint_velocity_grip, &joint_effort_grip);
+    joint_state_interface_.registerHandle(state_handle_grip);
+
+    hardware_interface::JointHandle pos_handle_grip(joint_state_interface_.getHandle(JOINT_GRIP), &joint_pos_cmd_grip);
+    position_joint_interface_.registerHandle(pos_handle_grip);
+
+    registerInterface(&joint_state_interface_);
+    registerInterface(&position_joint_interface_);
+
+    nh_.param<double>("rot_init_pos", joint_pos_cmd_rotation, 0.0);
+
+    nh_.param<double>("grip_init_pos", joint_pos_cmd_grip, 0.0);
+    ROS_INFO("Initialization complete");
+  }
+
+  void TaurobClawNode::cleanup(){
+
+  }
+
+  void TaurobClawNode::read(ros::Time time, ros::Duration period){
+    //Done in On_claw_receive()
+  }
+
+  void TaurobClawNode::write(ros::Time time, ros::Duration period){
+    ROS_DEBUG_THROTTLE(1,"rotation_to_command: %f", joint_pos_cmd_rotation);
+    double rotation = rot_factor*joint_pos_cmd_rotation - rot_offset;
+    claw->Set_rotation(rotation);
+    ROS_DEBUG_THROTTLE(1,"rotation_commanded: %f", rotation);
+
+    ROS_DEBUG_THROTTLE(1,"gripper_to_command: %f", joint_pos_cmd_grip);
+    double grip = grip_factor*joint_pos_cmd_grip - grip_offset;
+    claw->Set_grip(grip);
+    ROS_DEBUG_THROTTLE(1,"gripper_commanded: %f", grip);
+
+  }
+
+}
+
 std::string ip_address;
 int port;
 
+bool control_enabled;
 
-void sigint_handler(int sig)
-{
-    ros::shutdown();
-}
-
-void jointstate_cmd_callback(const sensor_msgs::JointState::ConstPtr& msg)
-{
-	if (claw != 0)
-	{
-		std::vector<std::string> jointnames = msg->name;
-
-		for (int index = 0; index < jointnames.size(); index++)
-		{
-			if (strcmp(jointnames[index].c_str(), "claw_rotation") == 0)
-			{
-				float setrot = (msg->position[index] - rot_offset);
-				
-				// make sure setrot is in [0..2pi]
-				while (setrot < 0) setrot += 2*M_PI;
-				while (setrot > 2*M_PI) setrot -= 2*M_PI;
-				ROS_INFO("setting claw rotation angle to %f rad (offset is %f)", setrot, rot_offset);
-				claw->Set_rotation(setrot);
-			}
-			else if (strcmp(jointnames[index].c_str(), "claw_grip") == 0)
-			{
-				float setgrip = (msg->position[index] - grip_offset);
-				
-				// make sure setpos is in [0..2pi]
-				while (setgrip < 0) setgrip += 2*M_PI;
-				while (setgrip > 2*M_PI) setgrip -= 2*M_PI;
-				ROS_INFO("setting claw grip angle to %f rad (offset is %f)", setgrip, grip_offset);
-				claw->Set_grip(setgrip);
-			}
-		}
-	}
-}
-
-
-void watchdog_feed_callback(const std_msgs::Bool::ConstPtr& msg)
-{
-	if (claw != 0 && msg->data == true)
-	{
-		claw->Feed_watchdog();
-	}
-}
-
-void enable_control_callback(const std_msgs::Bool::ConstPtr& msg)
-{
-	if (claw != 0)
-	{
-		ROS_INFO("setting control to %s", (msg->data ? (char*)"true" : (char*)"false"));
-		claw->Set_pause_sending(!(msg->data)); 	// if control enabled, pause=false. if control disabled, pause=true.
-	}
-}
-
-
-void init()
-{
-	signal(SIGINT, sigint_handler);
-	
-	ROS_INFO("reading parameters...");
-	
-	ros::NodeHandle local_nh = NodeHandle(ros::this_node::getName());
-	
-	// get parameters -- try to, at least
-	try
-	{
-		local_nh.param<bool>("watchdog", watchdog, true);
-		ROS_INFO("Safeguard (Watchdog or Command RX Timeout): %s", (char*)(watchdog ? "Watchdog" : "Command RX Timeout"));
-		
-		local_nh.param<bool>("control_enabled_at_startup", control_enabled, true);
-		ROS_INFO("Robot control enabled at startup: %s", (char*)(control_enabled ? "true" : "false"));
-		
-		local_nh.param<std::string>("ip_address", ip_address, "10.0.0.50");
-		ROS_INFO("IP address: %s", ip_address.c_str());
-		
-		local_nh.param<int>("port", port, 1235);
-		ROS_INFO("Port: %d", port);
-		
-		local_nh.param<double>("rot_offset", rot_offset, 0.0);
-		local_nh.param<double>("grip_offset", grip_offset, 0.0);
-		ROS_INFO("Offsets: rot: %f, grip: %f", rot_offset, grip_offset);
-	}
-	catch(...)
-	{
-		ROS_ERROR("No configuration found -- won't be doing anything.");
-	}
-	
-	sub_jointstate = nh->subscribe("jointstate_cmd", 1, &jointstate_cmd_callback);
-	sub_watchdog = nh->subscribe("watchdog_feed", 1, &watchdog_feed_callback);
-	sub_enabler = nh->subscribe("enable_control", 1, &enable_control_callback);
-	pub_jointstate = nh->advertise<sensor_msgs::JointState>("jointstate_status", 1);
-	pub_force = nh->advertise<std_msgs::Float64>("claw_force", 1);
-	
-	ROS_INFO("Initialization complete");
-}
+boost::shared_ptr<taurob_claw_node::TaurobClawNode> claw_node;
+boost::shared_ptr<Claw> claw;
 
 void On_claw_receive()
 {
-	ROS_DEBUG("Claw received; rot angle is %f, grip angle is %f", claw->Get_rotation(), claw->Get_grip());
-	
-	sensor_msgs::JointState js;
-	js.name.push_back("claw_rotation");
-	js.name.push_back("claw_grip");
-	js.header.stamp = ros::Time::now();
-	
-	double rot = (claw->Get_rotation() + rot_offset);
-	while (rot > M_PI) rot -= 2*M_PI;
-	while (rot < -M_PI) rot += 2*M_PI;
-	js.position.push_back(rot);
+  ROS_DEBUG("Claw received; rot angle is %f, grip angle is %f", claw->Get_rotation(), claw->Get_grip());
 
-	double grip = (claw->Get_grip() + grip_offset);
-	while (grip > M_PI) grip -= 2*M_PI;
-	while (grip < -M_PI) grip += 2*M_PI;
-	js.position.push_back(grip);
-	
-	pub_jointstate.publish(js);
+  double rot = claw->Get_rotation() ;
 
-	std_msgs::Float64 forcemsg;
-	forcemsg.data = claw->Get_force();
-	pub_force.publish(forcemsg);
+  ROS_DEBUG_THROTTLE(1, "rot input: %f", rot);
+  rot = (rot + claw_node->rot_offset)/claw_node->rot_factor;
+  ROS_DEBUG_THROTTLE(1, "rot output: %f", rot);
+  while (rot > M_PI) rot -= 2*M_PI;
+  while (rot < -M_PI) rot += 2*M_PI;
+
+  claw_node->joint_position_rotation = rot;
+
+  double grip = claw->Get_grip();
+  while (grip > M_PI) grip -= 2*M_PI;
+  while (grip < -M_PI) grip += 2*M_PI;
+
+  ROS_DEBUG_THROTTLE(1, "grip input: %f", grip);
+  grip = (grip + claw_node->grip_offset)/claw_node->grip_factor;
+  ROS_DEBUG_THROTTLE(1, "grip output: %f", grip);
+
+  claw_node->joint_position_grip = grip;
+
+  claw_node->joint_effort_grip = claw->Get_force();
+
 }
 
 
-int main(int argc, char **argv) 
-{
-	ROS_INFO("starting claw node");
-	ros::init(argc, argv, "taurob_claw_node");
-	
-	NodeHandle rosnh;
-	nh = &rosnh;
-	
-	init();
-	ROS_INFO("\ntaurob Claw Node is running.\n");
-	
-	claw = new Claw(ip_address, port, control_enabled);
-	claw->Set_on_received_callback(&On_claw_receive);
-	claw->Set_watchdog_enabled(watchdog);
-	claw->Run();
+int main(int argc, char** argv){
 
-	ros::spin();
-	
-	claw->Stop();
-	delete(claw);
-	
-	ROS_INFO("Terminating.");	
-	return 0;
+  try{
+    ROS_INFO("starting");
+    ros::init(argc, argv, "taurob_claw_node");
+
+    ros::NodeHandle pnh("~");
+
+
+    pnh.param<std::string>("ip_address", ip_address, "10.0.0.50");
+    ROS_INFO("IP address: %s", ip_address.c_str());
+
+    pnh.param<int>("port", port, 1235);
+    ROS_INFO("Port: %d", port);
+
+    pnh.param<bool>("control_enabled_at_startup", control_enabled, true);
+    ROS_INFO("Robot control enabled at startup: %s", (char*)(control_enabled ? "true" : "false"));
+
+
+    claw.reset(new Claw (ip_address, port, control_enabled));
+
+    claw_node.reset(new taurob_claw_node::TaurobClawNode(pnh, claw));
+    claw_node->init();
+
+    claw->Set_on_received_callback(&On_claw_receive);
+    claw->Set_watchdog_enabled(claw_node->watchdog);
+    claw->Run();
+
+    ROS_DEBUG("ControllerManager - setup");
+    controller_manager::ControllerManager cm(&(*claw_node), pnh);
+    ROS_DEBUG("ControllerManager - done");
+
+    ros::AsyncSpinner spinner(4);
+    spinner.start();
+
+    ros::Rate loop_rate(50);
+
+    ros::Time last_time = ros::Time::now();
+
+    ROS_DEBUG("pre loop");
+    while (ros::ok())
+    {
+      //ROS_INFO("in main loop");
+      loop_rate.sleep();
+
+      ros::Time current_time = ros::Time::now();
+      ros::Duration elapsed_time = current_time - last_time;
+      last_time = current_time;
+
+      //ROS_INFO("before read");
+      claw_node->read(current_time, elapsed_time);
+      //ROS_INFO("after read");
+
+      //ROS_INFO("before cm.update");
+      cm.update(current_time, elapsed_time);
+      //ROS_INFO("after cm.update");
+
+      //ROS_INFO("before write");
+      claw_node->write(current_time, elapsed_time);
+      //ROS_INFO("after write");
+    }
+
+    claw_node->cleanup();
+
+    claw->Stop();
+  }
+  catch(...)
+  {
+    ROS_ERROR("Unhandled exception!");
+    return -1;
+  }
+
+  return 0;
 }
-

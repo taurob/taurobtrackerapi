@@ -1,0 +1,9 @@
+gripper_grasp_traj_controller:
+  type: "position_controllers/JointTrajectoryController"
+  joints:
+     - gripper_joint_0
+
+gripper_roll_traj_controller:
+  type: "position_controllers/JointTrajectoryController"
+  joints:
+    - arm_joint_4

@@ -365,8 +365,19 @@ void publish_imu()
 
 void publish_odometry_and_tf()
 {
-	float dt = (ros::Time::fromBoost(tb->Get_last_frame_timestamp()) - last_rx_frame_time).toSec();
-	last_rx_frame_time = ros::Time::now(); //ros::Time::fromBoost(tb->Get_last_frame_timestamp());
+	//On first invocation, just remember timestamp and return.
+  	if (last_rx_frame_time == ros::Time(0)){
+    	last_rx_frame_time = ros::Time::fromBoost(tb->Get_last_frame_timestamp());
+    	return;
+  	}
+
+  	// @Todo: Sync those two. For now, we use time diff from rx receive time to compute dt
+  	// and ros::Time::now() to set the header stamp
+  	ros::Time current_rx_time = ros::Time::fromBoost(tb->Get_last_frame_timestamp());
+  	ros::Time current_ros_time = ros::Time::now();
+
+  	float dt = (current_rx_time - last_rx_frame_time).toSec();
+  	last_rx_frame_time = current_rx_time; 
 	
 	// calculate odometry (x, y, alpha) from wheel distances and publish
 	boost::tuple<float, float> dist = tb->Get_motor_distance();
@@ -418,9 +429,14 @@ void publish_odometry_and_tf()
 	drive_vector.linear.x /= dt;
 	drive_vector.linear.y /= dt;
 
+  	if (std::abs(drive_vector.linear.x) > 2.0 ){
+    	ROS_ERROR("Implausible linear velocity: %f for dt: %f. Not publishing odometry!", drive_vector.linear.x, dt);
+    	return;
+  	}
+
 	// publish the odometry message over ROS
 	nav_msgs::Odometry odom;
-	odom.header.stamp = last_rx_frame_time;
+	odom.header.stamp = current_ros_time;
 	odom.header.frame_id = tf_to_frame;
 
 	odom.pose.pose.position.x = x;
@@ -609,6 +625,7 @@ void init()
     signal(SIGINT, sigint_handler);
     
     get_parameters();
+  	last_rx_frame_time = ros::Time(0);
 	    
     sub_twist = nh->subscribe("cmd_vel", 1, &twist_cmd_callback);
     sub_jointstate = nh->subscribe("jointstate_cmd", 1, &jointstate_cmd_callback);
