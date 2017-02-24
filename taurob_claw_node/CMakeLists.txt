@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   hardware_interface
   controller_manager
+  joint_limits_interface
 )
 
 ## System dependencies are found with CMake's conventions
