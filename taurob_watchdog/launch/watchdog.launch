@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<launch>
+	<node name="watchdog_node" pkg="taurob_watchdog" type="taurob_watchdog_node" output="screen">
+		<param name="supply_watchdog_after_coms_loss_secs" value="90" />
+		<param name="watchdog_detect_after_coms_loss_tolerance_secs" value="30" />
+	</node>
+</launch>

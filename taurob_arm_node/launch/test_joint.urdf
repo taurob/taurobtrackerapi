@@ -1,0 +1,44 @@
+<robot name="test_joint">
+  <link name="base_link">
+      <visual>
+      <geometry>
+        <box size="0.2 .15 .3"/>
+      </geometry>
+      <material name="blackish">
+        <color rgba="0.3 0.3 0.3 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="rotating_head">
+    <visual>
+      <geometry>
+        <box size="0.2 .1 .04"/>
+      </geometry>
+      <material name="blackish"/>
+      <origin xyz="0.1 0 0" rpy="0 0 0"/>
+    </visual>
+  </link>
+  <link name="rotating_head_base">
+    <visual>
+      <geometry>
+        <box size="0.02 .1 .1"/>
+      </geometry>
+      <material name="blackish"/>
+      <origin xyz="0.1 0 0" rpy="0 0 0"/>
+    </visual>
+  </link>
+
+  <joint name="arm_joint_0" type="revolute">
+    <parent link="base_link"/>
+    <child link="rotating_head"/>
+    <origin xyz="0.2 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="0.015" upper="1.474" />
+  </joint>
+  
+  <joint name="fixed_joint" type="fixed">
+    <parent link="rotating_head"/>
+    <child link="rotating_head_base"/>
+    <origin xyz="-0.1 0 0.03" rpy="0 0 0"/>
+  </joint>
+</robot>

@@ -1,0 +1,6 @@
+arm_config:
+  # pattern is: name:ip_addr:port:offset(rad):gear_ratio:torque_constant
+  - arm_joint_0:10.0.0.106:8041:0
+  - arm_joint_1:10.0.0.107:8042:0
+  - arm_joint_2:10.0.0.107:8043:0
+  - arm_joint_3:10.0.0.108:8044:0
