@@ -6,16 +6,16 @@
     xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface">
 
     
-    <property name="base_size_x" value="0.92" />
-    <property name="base_size_y" value="0.24" />
-    <property name="base_size_z" value="0.34" />
-    <property name="M_PI" value="3.14159265359" />
+    <xacro:property name="base_size_x" value="0.92" />
+    <xacro:property name="base_size_y" value="0.24" />
+    <xacro:property name="base_size_z" value="0.34" />
+    <xacro:property name="M_PI" value="3.14159265359" />
     
-    <macro name="taurob_arm_macro" params="parent *origin">
+    <xacro:macro name="taurob_arm_macro" params="parent *origin">
       
       
 	<joint name="arm_joint_0" type="revolute">    
-		<insert_block name="origin"/>
+		<xacro:insert_block name="origin"/>
 		<axis xyz="0 0 1"/>
 		<limit lower="${-180 * M_PI / 180}" upper="${180 * M_PI / 180}"
 		     effort="1000" velocity="${1.0 * 110 * M_PI / 180}" />
@@ -219,5 +219,5 @@
       <material>Gazebo/Grey</material>
     </gazebo>  
        
-    </macro>
+    </xacro:macro>
 </robot>
