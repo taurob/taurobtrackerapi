@@ -1,1 +1,0 @@
-sudo setcap cap_net_bind_service=ep ~/argo/devel/lib/taurob_flipper_ros_control/flipper_hw_interface

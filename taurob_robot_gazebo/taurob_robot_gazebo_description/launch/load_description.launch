@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-    <param name="use_sim_time" value="true" />
-
-    <!-- send the robot XML to param server -->
-    <param name="robot_description" command="$(find xacro)/xacro.py '$(find taurob_robot_gazebo_description)/urdf/tracker/robot.gazebo.xacro'" />
-
-</launch>

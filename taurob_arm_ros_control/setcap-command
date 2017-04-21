@@ -1,1 +1,0 @@
-sudo setcap cap_net_bind_service=ep taurob_arm_node
