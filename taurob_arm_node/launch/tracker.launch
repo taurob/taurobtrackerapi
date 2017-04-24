@@ -1,15 +1,10 @@
 <?xml version="1.0"?>
-
 <launch>
-  <arg name="watchdog_enabled" default="false" />
-  <arg name="robot_name" default="default" />
+  <arg name="robot_name" default="default"/>
 
-	<node pkg="taurob_arm_node" type="taurob_arm_node" name="taurob_arm_node" output="screen">	
-		<rosparam file="$(find taurob_arm_node)/config/$(arg robot_name).yaml" command="load"/>
-		<param name="watchdog" value="$(arg watchdog_enabled)" />
- 		<param name="control_enabled_at_startup" value="true" />
-
-		<remap from="/jointstate_status" to="/joint_states" />
-	</node>
-	
+  <node pkg="taurob_arm_node" type="taurob_arm_node" name="taurob_arm_node" output="screen">
+    <rosparam file="$(find taurob_arm_node)/config/$(arg robot_name).yaml" command="load"/>
+    <param name="control_enabled_at_startup" value="true"/>
+    <remap from="/jointstate_status" to="/joint_states"/>
+  </node>
 </launch>
