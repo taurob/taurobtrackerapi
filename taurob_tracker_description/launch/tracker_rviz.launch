@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+  <!--
+    This launch file loads the robot model and launches robot/joint_state_publisher nodes so
+    that the model can be viewed in rviz and manipulated with the UI from joint_state_publisher.
+  -->
+  <param
+    name="robot_description"
+    command="$(find xacro)/xacro.py $(find taurob_tracker_description)/urdf/robot.urdf.xacro"/>
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+  <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+    <param name="use_gui" value="true"/>
+  </node>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find taurob_tracker_description)/launch/tracker_rviz.launch.rviz"/>
+</launch>

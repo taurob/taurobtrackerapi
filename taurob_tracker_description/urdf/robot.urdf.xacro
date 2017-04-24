@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot name="taurob_tracker"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="flipper_offset_x" value="0.205"/>
+  <xacro:property name="flipper_offset_y" value="0.15"/>
+  <xacro:property name="flipper_offset_z" value="0.099"/>
+
+  <xacro:property name="M_PI" value="3.14159"/>
+  <xacro:property name="angle_deg" value="45"/>
+
+  <xacro:include filename="$(find taurob_tracker_description)/urdf/tracker_chassis.urdf.xacro"/>
+  <xacro:include filename="$(find taurob_arm_description)/urdf/tracker/taurob_arm.urdf.xacro.xml"/>
+
+  <tracker_chassis_macro/>
+  <taurob_arm_macro parent="base_link">
+    <origin xyz="0.12 0 0.185" rpy="0 0 ${M_PI/2}"/>
+  </taurob_arm_macro>
+</robot>
