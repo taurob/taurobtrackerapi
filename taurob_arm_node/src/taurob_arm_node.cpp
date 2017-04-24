@@ -45,8 +45,8 @@
 #include <boost/thread/mutex.hpp>
 
 #include "libtaurob_arm/libtaurob_arm.h"
-#include "taurob_driver_msgs/JointAdditionalInfo.h"
-#include "taurob_driver_msgs/JointAdditionalCommand.h"
+#include "taurob_arm_node/JointAdditionalInfo.h"
+#include "taurob_arm_node/JointAdditionalCommand.h"
 
 using namespace ros;
 using namespace std;
@@ -153,7 +153,7 @@ void watchdog_feed_callback(const std_msgs::Bool::ConstPtr& msg)
 	}
 }
 
-void joint_additional_command_callback(const taurob_driver_msgs::JointAdditionalCommand::ConstPtr& msg)
+void joint_additional_command_callback(const taurob_arm_node::JointAdditionalCommand::ConstPtr& msg)
 {
     if (man != 0)
     {
@@ -240,7 +240,7 @@ void init()
 	sub_watchdog = nh->subscribe("watchdog_feed", 1, &watchdog_feed_callback);
     sub_additional_commands = nh->subscribe("joint_additional_command", 1, &joint_additional_command_callback);
 	pub_jointstate = nh->advertise<sensor_msgs::JointState>("jointstate_status", 1);
-    pub_additional_info = nh->advertise<taurob_driver_msgs::JointAdditionalInfo>("joint_additional_info", 1);
+    pub_additional_info = nh->advertise<taurob_arm_node::JointAdditionalInfo>("joint_additional_info", 1);
 	
 	ROS_INFO("Initialization complete");
 }
@@ -304,7 +304,7 @@ void publish_joint_states()
                 (dig_in_1_last_state[i] != current_status.dig_in_1_state) ||
                 (dig_in_2_last_state[i] != current_status.dig_in_2_state))
             {
-                taurob_driver_msgs::JointAdditionalInfo additional_info;
+                taurob_arm_node::JointAdditionalInfo additional_info;
                 additional_info.name.push_back(man_config.joint_names[i]);
                 ros::Time ros_timestamp(current_status.timestamp_sec, current_status.timestamp_ns);
                 additional_info.header.stamp = ros_timestamp;

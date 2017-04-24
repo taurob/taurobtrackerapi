@@ -3,10 +3,21 @@ project(taurob_arm_node)
 
 find_package(catkin REQUIRED COMPONENTS
   libtaurob
+  message_generation
   roscpp
   sensor_msgs
   std_msgs
-  taurob_driver_msgs
+)
+
+add_message_files(DIRECTORY msg
+  FILES
+  JointAdditionalCommand.msg
+  JointAdditionalInfo.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 include_directories(
@@ -18,7 +29,7 @@ add_executable(taurob_arm_node
 )
 
 add_dependencies(taurob_arm_node
-  taurob_driver_msgs_generate_messages_cpp
+  taurob_arm_node_generate_messages_cpp
 )
 
 target_link_libraries(taurob_arm_node
