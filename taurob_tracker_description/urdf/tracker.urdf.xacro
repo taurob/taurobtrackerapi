@@ -10,10 +10,11 @@
   <xacro:property name="angle_deg" value="45"/>
 
   <xacro:include filename="$(find taurob_tracker_description)/urdf/tracker_chassis.urdf.xacro"/>
-  <xacro:include filename="$(find taurob_arm_description)/urdf/tracker/taurob_arm.urdf.xacro.xml"/>
+  <xacro:include filename="$(find taurob_tracker_description)/urdf/tracker_arm.urdf.xacro"/>
 
   <tracker_chassis_macro/>
-  <taurob_arm_macro parent="base_link">
+
+  <tracker_arm_macro parent="base_link">
     <origin xyz="0.12 0 0.185" rpy="0 0 ${M_PI/2}"/>
-  </taurob_arm_macro>
+  </tracker_arm_macro>
 </robot>
