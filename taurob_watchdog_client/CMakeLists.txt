@@ -3,6 +3,8 @@ project(taurob_watchdog_client)
 
 find_package(catkin)
 
+catkin_package()
+
 add_executable(taurob_watchdog_client
   src/taurob_watchdog_client.cpp
 )
