@@ -3,6 +3,8 @@
   <!--
     This launch file loads the robot model and launches robot/joint_state_publisher nodes so
     that the model can be viewed in rviz and manipulated with the UI from joint_state_publisher.
+
+    The real robot is not required for this launch file.
   -->
   <param
     name="robot_description"
@@ -13,5 +15,5 @@
     <param name="use_gui" value="true"/>
   </node>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find taurob_tracker_description)/launch/tracker_rviz.launch.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find taurob_tracker_description)/launch/tracker_model_rviz.launch.rviz"/>
 </launch>
