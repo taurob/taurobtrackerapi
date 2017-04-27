@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(libtaurob)
 
-find_package(catkin)
+find_package(catkin REQUIRED COMPONENTS
+  diagnostic_updater
+)
 
 catkin_package(
   INCLUDE_DIRS include
