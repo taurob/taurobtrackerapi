@@ -95,14 +95,7 @@ class Taurob_base : public IUdpReceiver
         /** Called if a status frame was received */
         void Set_on_received_callback(void (*callback)(DRIVETRAIN_STATUS status));
 
-	private:
-        static const int WATCHDOG_MAX_TIME = 250;	//ms
-		static const int CURRENT_AVERAGE_ELEMENTS = 3;
-        static const int AIR_PRESSURE_ELEMENTS = 100;
-		static const double MAX_TOTAL_MOTOR_CURRENT = 25.0;
-        static const double MAX_TEMPERATURE = 90.0;
-        static const int COOLDOWN_PERIOD_MS = 10000;
-
+private:
         std::string ECU_host_ip;
         int ECU_host_port;
         void (*on_receive_callback)(DRIVETRAIN_STATUS status);

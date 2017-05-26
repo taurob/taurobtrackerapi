@@ -31,9 +31,14 @@
 #include "libtaurob_base/libtaurob_base.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-using namespace boost::tuples;
 using namespace boost;
 
+#define WATCHDOG_MAX_TIME 250 /* ms */
+#define CURRENT_AVERAGE_ELEMENTS 3
+#define AIR_PRESSURE_ELEMENTS 100
+#define MAX_TOTAL_MOTOR_CURRENT 25.0
+#define MAX_TEMPERATURE 90.0
+#define COOLDOWN_PERIOD_MS 10000
 
 Taurob_base::Taurob_base(std::string host_ip,
                          int host_port,
