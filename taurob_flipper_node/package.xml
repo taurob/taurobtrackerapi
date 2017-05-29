@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>taurob_flipper_node</name>
+  <version>0.0.0</version>
+  <description>A node to control the flipper of the taurob tracker.</description>
+
+  <maintainer email="office@taurob.com">taurob GmbH</maintainer>
+
+  <license>3-clause BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>libtaurob</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+
+  <run_depend>libtaurob</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>taurob_watchdog</run_depend>
+</package>

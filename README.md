@@ -74,6 +74,20 @@ Handles communication with the robot's base platform.
 
  * `watchdog_feed` (std_msgs/Bool) - Used for the emergency stop. If the node doesn't receive a watchdog message within a defined interval, it will stop any movement. Do not use for other purposes, and do not publish custom messages on this topic. 
 
+### taurob_flipper_node
+
+Handles communication with the robot's flipper.
+
+*Publishes:*
+
+ * `joint_states` (sensor_msgs/JointState) - The current angle of the flipper. Only the "position" member is defined!
+
+*Subscribes:*
+
+ * `jointstate_cmd` (sensor_msgs/JointState) - The desired angle for the flipper.
+
+ * `watchdog_feed` (std_msgs/Bool) - Used for the emergency stop. If the node does not receive a watchdog message within a defined interval, it will stop any movement. Do not use for other purposes, and do not publish custom messages on this topic.
+
 ### taurob_watchdog 
 
 Watchdog server that listens for messages from an external watchdog client, and relays them to a ROS message.

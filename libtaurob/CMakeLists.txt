@@ -24,6 +24,8 @@ add_library(libtaurob
   src/Arm_frames.cpp
   src/Arm_segment.cpp
   src/Base_frames.cpp
+  src/flipper.cpp
+  src/flipper_frames.cpp
   src/libtaurob_base.cpp
   src/SocketTCP.cpp
   src/SocketUDP.cpp

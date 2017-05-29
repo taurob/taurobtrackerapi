@@ -17,6 +17,7 @@
   <include file="$(find taurob_watchdog)/launch/watchdog.launch"/>
   <include file="$(find taurob_base_node)/launch/tracker.launch"/>
   <include file="$(find taurob_arm_node)/launch/tracker.launch"/>
+  <include file="$(find taurob_flipper_node)/launch/tracker.launch"/>
 
   <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
     <param name="use_gui" value="true"/>
