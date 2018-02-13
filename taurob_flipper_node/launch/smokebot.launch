@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <remap from="jointstate_cmd" to="jointstate_cmd_switched"/>
+
+  <node pkg="taurob_flipper_node" type="taurob_flipper_node" name="taurob_flipper_node" output="screen">
+    <remap from="/jointstate_status" to="/joint_states"/>
+    <param name="ip_address" value="10.0.0.41"/>
+    <param name="port" value="1111"/>
+  </node>
+</launch>

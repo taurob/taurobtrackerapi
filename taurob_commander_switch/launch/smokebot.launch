@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="taurob_commander_switch" type="taurob_commander_switch_node.py" name="taurob_commander_switch" output="screen">
+  </node>
+</launch>

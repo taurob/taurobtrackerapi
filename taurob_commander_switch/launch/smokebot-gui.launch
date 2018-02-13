@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="taurob_commander_switch" type="selectiongui.py" name="selectiongui" output="screen">
+    <env name="DISPLAY" value=":0.0"/>
+  </node>
+</launch>
