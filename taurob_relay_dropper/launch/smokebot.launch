@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="taurob_relay_dropper" type="taurob_relay_dropper_node.py" name="taurob_relay_dropper" output="screen">
+  </node>
+</launch>
