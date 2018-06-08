@@ -123,26 +123,52 @@ void sigint_handler(int sig)
 
 void jointstate_cmd_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
-	if (man != 0)
+	if (man == 0)
 	{
-		std::vector<std::string> jointnames = msg->name;
+		return;
+	}
 
-		for (int index = 0; index < jointnames.size(); index++)
+	ARM_SEGMENT_STATE state = STOP;
+	if (msg->name.size() == msg->position.size())
+	{
+		state = POSITION_CONTROL;
+	}
+	else if(msg->name.size() == msg->velocity.size())
+	{
+		state = SPEED_CONTROL;
+	}
+	else
+	{
+		// Neither the 'position' nor the 'velocity' vector
+		// has the correct size.
+		return;
+	}
+
+	arm_segement_commands_locker.lock();
+
+	// Copy the command values from the ROS message
+	// into the command structures for the arm joints.
+	for (int n = 0; n < msg->name.size(); n++)
+	{
+		for (int j = 0; j < man_config.joint_names.size(); j++)
 		{
-			for (int i = 0; i < man_config.joint_names.size(); i++)
+			if (msg->name[n] == man_config.joint_names[j])
 			{
-				if (strcmp(jointnames[index].c_str(), man_config.joint_names[i].c_str()) == 0)
+				arm_segment_commands[j].state = state;
+				if (state == POSITION_CONTROL)
 				{
-                    arm_segement_commands_locker.lock();
-                    arm_segment_commands[i].state = POSITION_CONTROL;
-                    arm_segment_commands[i].set_position = msg->position[index];
-                    arm_segment_commands[i].max_speed = 0;
-                    man->Set(i, arm_segment_commands[i]);
-                    arm_segement_commands_locker.unlock();
+					arm_segment_commands[j].set_position = msg->position[n];
+					arm_segment_commands[j].max_speed = 0;
+				}
+				else
+				{
+					arm_segment_commands[j].set_speed = msg->velocity[n];
 				}
 			}
 		}
 	}
+
+	arm_segement_commands_locker.unlock();
 }
 
 void watchdog_feed_callback(const std_msgs::Bool::ConstPtr& msg)
