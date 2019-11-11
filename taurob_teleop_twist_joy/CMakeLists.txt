@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(taurob_teleop_twist_joy)
+add_definitions(-std=c++11)
 #set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp roslaunch roslint sensor_msgs trajectory_msgs)
