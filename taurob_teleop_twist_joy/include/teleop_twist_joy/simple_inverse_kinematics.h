@@ -70,8 +70,8 @@ namespace teleop_twist_joy
 
         private:
 
-            static const double ELEMENT_A_LENGTH = 551;
-            static const double ELEMENT_B_LENGTH = 435;
+            static constexpr double ELEMENT_A_LENGTH = 551;
+            static constexpr double ELEMENT_B_LENGTH = 435;
 
             /** Performs forward kinematics to obtain joint 2 coordinates */
             static End_effector_coordinates Get_joint_2_coordinates(ModArm_angles angles);
